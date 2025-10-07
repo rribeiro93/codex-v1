@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import React from 'react';
 
 function parseCsv(text) {
   const rows = [];
@@ -39,7 +40,7 @@ function parseCsv(text) {
 
     if (char === '"') {
       inQuotes = true;
-    } else if (char === ',') {
+    } else if (char === ';') {
       pushField();
     } else if (char === '\n') {
       pushRow();
@@ -63,12 +64,116 @@ function parseCsv(text) {
   return rows.filter((row) => row.some((value) => value.trim() !== ''));
 }
 
+function toDate(value) {
+  if (!value && value !== 0) {
+    return '';
+  }
+
+  const formatDateParts = (year, month, day) => {
+    const yyyy = String(year).padStart(4, '0');
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return formatDateParts(
+      value.getUTCFullYear(),
+      value.getUTCMonth() + 1,
+      value.getUTCDate()
+    );
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const fromNumber = new Date(value);
+    if (!Number.isNaN(fromNumber.getTime())) {
+      return formatDateParts(
+        fromNumber.getUTCFullYear(),
+        fromNumber.getUTCMonth() + 1,
+        fromNumber.getUTCDate()
+      );
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const match = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (!match) {
+    return '';
+  }
+
+  const day = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  let year = Number.parseInt(match[3], 10);
+
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+    return '';
+  }
+
+  if (year < 100) {
+    year += 2000;
+  }
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return '';
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return '';
+  }
+
+  return formatDateParts(year, month, day);
+}
+
+function toNumber(value) {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return 0;
+  }
+
+  const normalized = value.trim().replace(/[^\d,.-]/g, '').replace(',', '.');
+  const parsed = Number.parseFloat(normalized);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function capitalize(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  return trimmed
+    .split(/\s+/)
+    .map((word) => `${word[0].toUpperCase()}${word.slice(1).toLowerCase()}`)
+    .join(' ');
+}
+
 function toEntry(row) {
   return {
-    date: row[0] ?? '',
+    date: toDate(row[0]),
     place: row[1] ?? '',
-    name: row[2] ?? '',
-    price: row[3] ?? '',
+    by: capitalize(row[2]),
+    price: toNumber(row[3]),
     installments: row[4] ?? ''
   };
 }

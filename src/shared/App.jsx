@@ -1,3 +1,4 @@
+import React from 'react';
 import CSVUploader from './CSVUploader';
 
 export default function App() {
