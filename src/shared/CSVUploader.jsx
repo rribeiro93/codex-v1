@@ -238,6 +238,9 @@ export default function CSVUploader() {
       {!!entries.length && (
         <pre style={styles.output}>{JSON.stringify(entries, null, 2)}</pre>
       )}
+      {/* {!!entries.length && (
+        <button type="button" style={styles.button} disabled="true">Import data</button>
+      )} */}
     </section>
   );
 }
@@ -246,12 +249,13 @@ const styles = {
   card: {
     backgroundColor: 'rgba(15, 23, 42, 0.85)',
     padding: '2rem',
+    margin: '2rem',
     borderRadius: '1rem',
     boxShadow: '0 20px 45px rgba(15, 23, 42, 0.45)',
     width: 'min(640px, 100%)',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
+    gap: '.7rem',
     alignItems: 'center',
     color: '#f8fafc'
   },
@@ -289,7 +293,7 @@ const styles = {
     borderRadius: '0.75rem',
     padding: '1rem',
     textAlign: 'left',
-    maxHeight: '320px',
+    maxHeight: '520px',
     overflow: 'auto',
     fontSize: '0.9rem',
     lineHeight: 1.5,
