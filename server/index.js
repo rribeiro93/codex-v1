@@ -1,5 +1,7 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const esbuild = require('esbuild');
 
 require('@babel/register')({
   extensions: ['.js', '.jsx'],
@@ -24,7 +26,50 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 const publicDir = path.resolve(__dirname, '../dist/public');
-app.use('/assets', express.static(path.join(publicDir, 'assets')));
+const assetsDir = path.join(publicDir, 'assets');
+const clientEntry = path.resolve(__dirname, '../src/client/index.jsx');
+const clientBundlePath = path.join(assetsDir, 'client.js');
+
+async function ensureClientBundle() {
+  if (!fs.existsSync(assetsDir)) {
+    fs.mkdirSync(assetsDir, { recursive: true });
+  }
+
+  const sharedOptions = {
+    entryPoints: [clientEntry],
+    bundle: true,
+    sourcemap: true,
+    outfile: clientBundlePath,
+    loader: {
+      '.js': 'jsx',
+      '.jsx': 'jsx'
+    },
+    publicPath: '/assets'
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    const ctx = await esbuild.context({
+      ...sharedOptions,
+      logLevel: 'info'
+    });
+    await ctx.watch();
+
+    const dispose = async () => {
+      await ctx.dispose();
+      process.exit(0);
+    };
+
+    process.on('SIGINT', dispose);
+    process.on('SIGTERM', dispose);
+  } else if (!fs.existsSync(clientBundlePath)) {
+    await esbuild.build({
+      ...sharedOptions,
+      minify: true
+    });
+  }
+}
+
+app.use('/assets', express.static(assetsDir));
 
 function createHtml(markup) {
   return `<!DOCTYPE html>
@@ -48,6 +93,13 @@ app.get('*', (req, res) => {
   res.status(200).send(createHtml(appHtml));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-});
+ensureClientBundle()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to start asset builder', err);
+    process.exit(1);
+  });

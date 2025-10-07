@@ -5,4 +5,4 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-store
 .DS_Store
-dist/public/assets/client.js
+dist/public/assets/

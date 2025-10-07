@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-The development server starts on [http://localhost:3000](http://localhost:3000). Changes in `server/` or `src/` automatically restart the server via `nodemon`.
+The development server starts on [http://localhost:3000](http://localhost:3000). Changes in `server/` or `src/` automatically restart the server via `nodemon`, and the client bundle is rebuilt in watch mode by ESBuild.
 
 ## Production build
 
@@ -22,7 +22,7 @@ npm run build
 npm start
 ```
 
-The build command bundles the client assets into `dist/public/assets`. The Express server serves the pre-built assets and renders the initial HTML on the server.
+The build command bundles the client assets into `dist/public/assets`. The Express server serves the pre-built assets and renders the initial HTML on the server. When running in production mode the server ensures the bundle exists before starting.
 
 ## Project structure
 
