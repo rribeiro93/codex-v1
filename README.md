@@ -37,3 +37,22 @@ The build command bundles the client assets into `dist/public/assets`. The Expre
 ```
 
 Feel free to extend the starter by adding routing, state management, or API integrations.
+
+## CSV preview component
+
+The default page now includes a CSV uploader component. It lets you pick a `.csv` file, parses
+each row, and presents the data as JSON objects with the following shape:
+
+```json
+[
+  {
+    "date": "",
+    "place": "",
+    "name": "",
+    "price": "",
+    "installments": ""
+  }
+]
+```
+
+Use the button on the homepage to select a CSV file and preview the transformed output instantly.
