@@ -169,13 +169,61 @@ function capitalize(value) {
 }
 
 function toEntry(row) {
+  const originalDate = row[0];
+  const originalPlace = row[1] ?? '';
+  const originalBy = row[2];
+  const originalPrice = row[3];
+  const originalInstallments = row[4] ?? '';
+
   return {
-    date: toDate(row[0]),
-    place: row[1] ?? '',
-    by: capitalize(row[2]),
-    price: toNumber(row[3]),
-    installments: row[4] ?? ''
+    date: toDate(originalDate),
+    place: originalPlace,
+    category: '',
+    owner: capitalize(originalBy),
+    price: toNumber(originalPrice),
+    installments: parseInstallments(originalInstallments)
   };
+}
+
+function parseInstallments(value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'object') {
+    const maybeCurrent = Number.parseInt(value.current, 10);
+    const maybeTotal = Number.parseInt(value.total, 10);
+
+    if (Number.isFinite(maybeCurrent) && Number.isFinite(maybeTotal)) {
+      return {
+        current: maybeCurrent,
+        total: maybeTotal
+      };
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '-') {
+    return null;
+  }
+
+  const match = trimmed.match(/^(\d+)\s*(?:de|\/)\s*(\d+)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const current = Number.parseInt(match[1], 10);
+  const total = Number.parseInt(match[2], 10);
+
+  if (!Number.isFinite(current) || !Number.isFinite(total)) {
+    return null;
+  }
+
+  return { current, total };
 }
 
 export default function CSVUploader() {
