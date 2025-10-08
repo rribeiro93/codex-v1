@@ -172,7 +172,7 @@ function toEntry(row) {
   const originalDate = row[0];
   const originalPlace = row[1] ?? '';
   const originalBy = row[2];
-  const originalPrice = row[3];
+  const originalAmount = row[3];
   const originalInstallments = row[4] ?? '';
 
   return {
@@ -180,7 +180,7 @@ function toEntry(row) {
     place: originalPlace,
     category: '',
     owner: capitalize(originalBy),
-    price: toNumber(originalPrice),
+    amount: toNumber(originalAmount),
     installments: parseInstallments(originalInstallments)
   };
 }
@@ -226,9 +226,27 @@ function parseInstallments(value) {
   return { current, total };
 }
 
+function extractMonthFromFileName(name) {
+  if (typeof name !== 'string') {
+    return '';
+  }
+
+  const match = name.match(/Fatura(\d{4}-\d{2})-\d{2}\.csv$/i);
+  if (!match) {
+    return '';
+  }
+
+  return match[1];
+}
+
 export default function CSVUploader() {
   const inputRef = useRef(null);
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState({
+    month: '',
+    totalAmount: 0,
+    totalTransactions: 0,
+    transactions: []
+  });
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
 
@@ -245,18 +263,42 @@ export default function CSVUploader() {
     }
 
     setError('');
-    setEntries([]);
+    setEntries({
+      month: '',
+      totalAmount: 0,
+      totalTransactions: 0,
+      transactions: []
+    });
     setFileName(file.name);
 
     try {
       const text = await file.text();
       const rows = parseCsv(text);
-      if (!rows.length) {
+      const dataRows = rows.slice(1);
+      if (!dataRows.length) {
         setError('No data rows found in the provided CSV file.');
         return;
       }
-      const mapped = rows.map(toEntry);
-      setEntries(mapped);
+      const mapped = dataRows
+        .map(toEntry)
+        .filter((transaction) => transaction.amount >= 0);
+      if (!mapped.length) {
+        setError('No data rows with a non-negative amount were found in the provided CSV file.');
+        return;
+      }
+      const month = extractMonthFromFileName(file.name);
+      const totalTransactions = mapped.length;
+      const totalAmount = mapped.reduce((sum, transaction) => {
+        const amount = Number.isFinite(transaction.amount) ? transaction.amount : 0;
+        return sum + amount;
+      }, 0);
+      const formattedTotalAmount = Number.parseFloat(totalAmount.toFixed(2));
+      setEntries({
+        month,
+        totalAmount: formattedTotalAmount,
+        totalTransactions,
+        transactions: mapped
+      });
     } catch (err) {
       setError('Failed to read the selected file. Please try again.');
       console.error(err);
@@ -283,10 +325,10 @@ export default function CSVUploader() {
       </button>
       {fileName && <p style={styles.fileName}>Selected: {fileName}</p>}
       {error && <p style={styles.error}>{error}</p>}
-      {!!entries.length && (
+      {!!entries.transactions.length && (
         <pre style={styles.output}>{JSON.stringify(entries, null, 2)}</pre>
       )}
-      {/* {!!entries.length && (
+      {/* {!!entries.transactions.length && (
         <button type="button" style={styles.button} disabled="true">Import data</button>
       )} */}
     </section>
