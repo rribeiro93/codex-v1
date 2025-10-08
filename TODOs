@@ -1,0 +1,5 @@
+[] Create a docker compose with mongodb
+[] Store all updload data to database
+[] Configure tensorflow to categorize the transactions
+[] Summarize amount by categories
+[] Generate views
