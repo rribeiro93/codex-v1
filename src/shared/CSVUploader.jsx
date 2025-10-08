@@ -1,303 +1,71 @@
-import { useRef, useState } from 'react';
-import React from 'react';
+import React, { useRef, useState } from 'react';
+import { parseCsvContent } from './utils/csvParser';
+import {
+  mapCsvRowToTransaction,
+  extractStatementMonth,
+  filterNonNegativeTransactions,
+  summarizeTransactions
+} from './utils/transactionNormalizer';
 
-function parseCsv(text) {
-  const rows = [];
-  let current = [];
-  let field = '';
-  let inQuotes = false;
-
-  const pushField = () => {
-    current.push(field);
-    field = '';
-  };
-
-  const pushRow = () => {
-    if (current.length > 0 || field !== '') {
-      pushField();
-      rows.push(current);
-    }
-    current = [];
-  };
-
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-
-    if (inQuotes) {
-      if (char === '"') {
-        if (nextChar === '"') {
-          field += '"';
-          i += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += char;
-      }
-      continue;
-    }
-
-    if (char === '"') {
-      inQuotes = true;
-    } else if (char === ';') {
-      pushField();
-    } else if (char === '\n') {
-      pushRow();
-    } else if (char === '\r') {
-      if (nextChar === '\n') {
-        pushRow();
-        i += 1;
-      } else {
-        pushRow();
-      }
-    } else {
-      field += char;
-    }
-  }
-
-  if (field !== '' || current.length) {
-    pushField();
-    rows.push(current);
-  }
-
-  return rows.filter((row) => row.some((value) => value.trim() !== ''));
-}
-
-function toDate(value) {
-  if (!value && value !== 0) {
-    return '';
-  }
-
-  const formatDateParts = (year, month, day) => {
-    const yyyy = String(year).padStart(4, '0');
-    const mm = String(month).padStart(2, '0');
-    const dd = String(day).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return formatDateParts(
-      value.getUTCFullYear(),
-      value.getUTCMonth() + 1,
-      value.getUTCDate()
-    );
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    const fromNumber = new Date(value);
-    if (!Number.isNaN(fromNumber.getTime())) {
-      return formatDateParts(
-        fromNumber.getUTCFullYear(),
-        fromNumber.getUTCMonth() + 1,
-        fromNumber.getUTCDate()
-      );
-    }
-  }
-
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return '';
-  }
-
-  const match = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
-  if (!match) {
-    return '';
-  }
-
-  const day = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-  let year = Number.parseInt(match[3], 10);
-
-  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
-    return '';
-  }
-
-  if (year < 100) {
-    year += 2000;
-  }
-
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
-    return '';
-  }
-
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() + 1 !== month ||
-    date.getUTCDate() !== day
-  ) {
-    return '';
-  }
-
-  return formatDateParts(year, month, day);
-}
-
-function toNumber(value) {
-  if (typeof value === 'number') {
-    return value;
-  }
-
-  if (typeof value !== 'string') {
-    return 0;
-  }
-
-  const normalized = value.trim().replace(/[^\d,.-]/g, '').replace(',', '.');
-  const parsed = Number.parseFloat(normalized);
-
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function capitalize(value) {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return '';
-  }
-
-  return trimmed
-    .split(/\s+/)
-    .map((word) => `${word[0].toUpperCase()}${word.slice(1).toLowerCase()}`)
-    .join(' ');
-}
-
-function toEntry(row) {
-  const originalDate = row[0];
-  const originalPlace = row[1] ?? '';
-  const originalBy = row[2];
-  const originalAmount = row[3];
-  const originalInstallments = row[4] ?? '';
-
-  return {
-    date: toDate(originalDate),
-    place: originalPlace,
-    category: '',
-    owner: capitalize(originalBy),
-    amount: toNumber(originalAmount),
-    installments: parseInstallments(originalInstallments)
-  };
-}
-
-function parseInstallments(value) {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === 'object') {
-    const maybeCurrent = Number.parseInt(value.current, 10);
-    const maybeTotal = Number.parseInt(value.total, 10);
-
-    if (Number.isFinite(maybeCurrent) && Number.isFinite(maybeTotal)) {
-      return {
-        current: maybeCurrent,
-        total: maybeTotal
-      };
-    }
-  }
-
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === '-') {
-    return null;
-  }
-
-  const match = trimmed.match(/^(\d+)\s*(?:de|\/)\s*(\d+)$/i);
-  if (!match) {
-    return null;
-  }
-
-  const current = Number.parseInt(match[1], 10);
-  const total = Number.parseInt(match[2], 10);
-
-  if (!Number.isFinite(current) || !Number.isFinite(total)) {
-    return null;
-  }
-
-  return { current, total };
-}
-
-function extractMonthFromFileName(name) {
-  if (typeof name !== 'string') {
-    return '';
-  }
-
-  const match = name.match(/Fatura(\d{4}-\d{2})-\d{2}\.csv$/i);
-  if (!match) {
-    return '';
-  }
-
-  return match[1];
-}
+const createEmptyStatement = () => ({
+  month: '',
+  totalAmount: 0,
+  totalTransactions: 0,
+  transactions: []
+});
 
 export default function CSVUploader() {
-  const inputRef = useRef(null);
-  const [entries, setEntries] = useState({
-    month: '',
-    totalAmount: 0,
-    totalTransactions: 0,
-    transactions: []
-  });
+  const fileInputRef = useRef(null);
+  const [statement, setStatement] = useState(createEmptyStatement);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
 
-  const handleClick = () => {
-    if (inputRef.current) {
-      inputRef.current.click();
+  const openFilePicker = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  const handleFile = async (event) => {
+  const resetStatement = () => {
+    setStatement(createEmptyStatement());
+  };
+
+  const handleFileSelection = async (event) => {
     const [file] = event.target.files ?? [];
     if (!file) {
       return;
     }
 
     setError('');
-    setEntries({
-      month: '',
-      totalAmount: 0,
-      totalTransactions: 0,
-      transactions: []
-    });
+    resetStatement();
     setFileName(file.name);
 
     try {
       const text = await file.text();
-      const rows = parseCsv(text);
+      const rows = parseCsvContent(text);
       const dataRows = rows.slice(1);
+
       if (!dataRows.length) {
         setError('No data rows found in the provided CSV file.');
         return;
       }
-      const mapped = dataRows
-        .map(toEntry)
-        .filter((transaction) => transaction.amount >= 0);
-      if (!mapped.length) {
+
+      const transactions = dataRows.map(mapCsvRowToTransaction);
+      const payableTransactions = filterNonNegativeTransactions(transactions);
+
+      if (!payableTransactions.length) {
         setError('No data rows with a non-negative amount were found in the provided CSV file.');
         return;
       }
-      const month = extractMonthFromFileName(file.name);
-      const totalTransactions = mapped.length;
-      const totalAmount = mapped.reduce((sum, transaction) => {
-        const amount = Number.isFinite(transaction.amount) ? transaction.amount : 0;
-        return sum + amount;
-      }, 0);
-      const formattedTotalAmount = Number.parseFloat(totalAmount.toFixed(2));
-      setEntries({
+
+      const month = extractStatementMonth(file.name);
+      const { totalAmount, totalTransactions } = summarizeTransactions(payableTransactions);
+
+      setStatement({
         month,
-        totalAmount: formattedTotalAmount,
+        totalAmount,
         totalTransactions,
-        transactions: mapped
+        transactions: payableTransactions
       });
     } catch (err) {
       setError('Failed to read the selected file. Please try again.');
@@ -310,26 +78,26 @@ export default function CSVUploader() {
   return (
     <section style={styles.card}>
       <input
-        ref={inputRef}
+        ref={fileInputRef}
         type="file"
         accept=".csv,text/csv"
-        onChange={handleFile}
+        onChange={handleFileSelection}
         style={{ display: 'none' }}
       />
       <div style={styles.info}>
         <h2 style={styles.title}>Upload CSV</h2>
         <p style={styles.subtitle}>
-          Select a CSV file to preview it as JSON
+          Select a CSV file with up to five columns to preview it as JSON.
         </p>
-        <button type="button" onClick={handleClick} style={styles.button}>
+        <button type="button" onClick={openFilePicker} style={styles.button}>
           Choose file
         </button>
         {fileName && <p style={styles.fileName}>Selected: {fileName}</p>}
         {error && <p style={styles.error}>{error}</p>}
       </div>
       <div style={styles.preview}>
-        {!!entries.transactions.length ? (
-          <pre style={styles.output}>{JSON.stringify(entries, null, 2)}</pre>
+        {!!statement.transactions.length ? (
+          <pre style={styles.output}>{JSON.stringify(statement, null, 2)}</pre>
         ) : (
           <div style={styles.placeholder}>
             <p style={styles.placeholderText}>Upload a file to see its preview here.</p>

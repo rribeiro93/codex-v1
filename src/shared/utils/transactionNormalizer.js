@@ -1,0 +1,193 @@
+function formatDateParts(year, month, day) {
+  const yyyy = String(year).padStart(4, '0');
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function normalizeDateCell(value) {
+  if (!value && value !== 0) {
+    return '';
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return formatDateParts(
+      value.getUTCFullYear(),
+      value.getUTCMonth() + 1,
+      value.getUTCDate()
+    );
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const fromNumber = new Date(value);
+    if (!Number.isNaN(fromNumber.getTime())) {
+      return formatDateParts(
+        fromNumber.getUTCFullYear(),
+        fromNumber.getUTCMonth() + 1,
+        fromNumber.getUTCDate()
+      );
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const match = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (!match) {
+    return '';
+  }
+
+  const day = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  let year = Number.parseInt(match[3], 10);
+
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+    return '';
+  }
+
+  if (year < 100) {
+    year += 2000;
+  }
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return '';
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return '';
+  }
+
+  return formatDateParts(year, month, day);
+}
+
+function parseAmountCell(value) {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return 0;
+  }
+
+  const normalized = value.trim().replace(/[^\d,.-]/g, '').replace(',', '.');
+  const parsed = Number.parseFloat(normalized);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatOwnerName(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  return trimmed
+    .split(/\s+/)
+    .map((word) => `${word[0].toUpperCase()}${word.slice(1).toLowerCase()}`)
+    .join(' ');
+}
+
+function normalizeInstallmentsField(value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'object') {
+    const maybeCurrent = Number.parseInt(value.current, 10);
+    const maybeTotal = Number.parseInt(value.total, 10);
+
+    if (Number.isFinite(maybeCurrent) && Number.isFinite(maybeTotal)) {
+      return {
+        current: maybeCurrent,
+        total: maybeTotal
+      };
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '-') {
+    return null;
+  }
+
+  const match = trimmed.match(/^(\d+)\s*(?:de|\/)\s*(\d+)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const current = Number.parseInt(match[1], 10);
+  const total = Number.parseInt(match[2], 10);
+
+  if (!Number.isFinite(current) || !Number.isFinite(total)) {
+    return null;
+  }
+
+  return { current, total };
+}
+
+export function mapCsvRowToTransaction(row = []) {
+  const originalDate = row[0];
+  const originalPlace = row[1] ?? '';
+  const originalOwner = row[2];
+  const originalAmount = row[3];
+  const originalInstallments = row[4] ?? '';
+
+  return {
+    date: normalizeDateCell(originalDate),
+    place: originalPlace,
+    category: '',
+    owner: formatOwnerName(originalOwner),
+    amount: parseAmountCell(originalAmount),
+    installments: normalizeInstallmentsField(originalInstallments)
+  };
+}
+
+export function extractStatementMonth(fileName) {
+  if (typeof fileName !== 'string') {
+    return '';
+  }
+
+  const match = fileName.match(/Fatura(\d{4}-\d{2})-\d{2}\.csv$/i);
+  if (!match) {
+    return '';
+  }
+
+  return match[1];
+}
+
+export function filterNonNegativeTransactions(transactions) {
+  return transactions.filter((transaction) => transaction.amount >= 0);
+}
+
+export function summarizeTransactions(transactions) {
+  const totalTransactions = transactions.length;
+  const rawAmount = transactions.reduce((sum, transaction) => {
+    const amount = Number.isFinite(transaction.amount) ? transaction.amount : 0;
+    return sum + amount;
+  }, 0);
+
+  const totalAmount = Number.parseFloat(rawAmount.toFixed(2));
+
+  return {
+    totalAmount,
+    totalTransactions
+  };
+}
