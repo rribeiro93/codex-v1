@@ -80,6 +80,11 @@ function createHtml(markup) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>React SSR Base</title>
     <link rel="icon" href="data:," />
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
   </head>
   <body>
     <div id="root">${markup}</div>

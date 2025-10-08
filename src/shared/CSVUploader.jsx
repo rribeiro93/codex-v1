@@ -319,7 +319,7 @@ export default function CSVUploader() {
       <div style={styles.info}>
         <h2 style={styles.title}>Upload CSV</h2>
         <p style={styles.subtitle}>
-          Select a CSV file with up to five columns to preview it as JSON.
+          Select a CSV file to preview it as JSON
         </p>
         <button type="button" onClick={handleClick} style={styles.button}>
           Choose file

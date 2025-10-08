@@ -15,7 +15,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%)',
+    background: 'linear-gradient(135deg, #293e49 0%, #1f2f37 100%)',
     color: '#f8fafc',
     fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     textAlign: 'center',
