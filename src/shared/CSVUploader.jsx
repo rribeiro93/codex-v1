@@ -309,10 +309,6 @@ export default function CSVUploader() {
 
   return (
     <section style={styles.card}>
-      <h2 style={styles.title}>Upload CSV</h2>
-      <p style={styles.subtitle}>
-        Select a CSV file with up to five columns to preview it as JSON.
-      </p>
       <input
         ref={inputRef}
         type="file"
@@ -320,17 +316,26 @@ export default function CSVUploader() {
         onChange={handleFile}
         style={{ display: 'none' }}
       />
-      <button type="button" onClick={handleClick} style={styles.button}>
-        Choose file
-      </button>
-      {fileName && <p style={styles.fileName}>Selected: {fileName}</p>}
-      {error && <p style={styles.error}>{error}</p>}
-      {!!entries.transactions.length && (
-        <pre style={styles.output}>{JSON.stringify(entries, null, 2)}</pre>
-      )}
-      {/* {!!entries.transactions.length && (
-        <button type="button" style={styles.button} disabled="true">Import data</button>
-      )} */}
+      <div style={styles.info}>
+        <h2 style={styles.title}>Upload CSV</h2>
+        <p style={styles.subtitle}>
+          Select a CSV file with up to five columns to preview it as JSON.
+        </p>
+        <button type="button" onClick={handleClick} style={styles.button}>
+          Choose file
+        </button>
+        {fileName && <p style={styles.fileName}>Selected: {fileName}</p>}
+        {error && <p style={styles.error}>{error}</p>}
+      </div>
+      <div style={styles.preview}>
+        {!!entries.transactions.length ? (
+          <pre style={styles.output}>{JSON.stringify(entries, null, 2)}</pre>
+        ) : (
+          <div style={styles.placeholder}>
+            <p style={styles.placeholderText}>Upload a file to see its preview here.</p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -342,11 +347,11 @@ const styles = {
     margin: '2rem',
     borderRadius: '1rem',
     boxShadow: '0 20px 45px rgba(15, 23, 42, 0.45)',
-    width: 'min(640px, 100%)',
+    width: 'min(960px, 100%)',
     display: 'flex',
-    flexDirection: 'column',
-    gap: '.7rem',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '1.5rem',
+    alignItems: 'stretch',
     color: '#f8fafc'
   },
   title: {
@@ -355,7 +360,6 @@ const styles = {
   },
   subtitle: {
     margin: 0,
-    textAlign: 'center',
     color: '#cbd5f5'
   },
   button: {
@@ -367,7 +371,8 @@ const styles = {
     color: '#0f172a',
     cursor: 'pointer',
     fontWeight: 600,
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    alignSelf: 'center'
   },
   fileName: {
     margin: 0,
@@ -376,6 +381,20 @@ const styles = {
   error: {
     margin: 0,
     color: '#f87171'
+  },
+  info: {
+    flex: '1 1 280px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3rem',
+    justifyContent: 'center'
+  },
+  preview: {
+    flex: '1 1 360px',
+    display: 'flex',
+    alignItems: 'stretch',
+    minHeight: '520px',
+    width: '100%'
   },
   output: {
     width: '100%',
@@ -388,5 +407,21 @@ const styles = {
     fontSize: '0.9rem',
     lineHeight: 1.5,
     border: '1px solid rgba(148, 163, 184, 0.25)'
+  },
+  placeholder: {
+    width: '100%',
+    borderRadius: '0.75rem',
+    border: '1px dashed rgba(148, 163, 184, 0.4)',
+    backgroundColor: 'rgba(2, 6, 23, 0.6)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '1.5rem'
+  },
+  placeholderText: {
+    margin: 0,
+    color: '#94a3b8',
+    fontSize: '0.95rem',
+    textAlign: 'center'
   }
 };
