@@ -1,3 +1,18 @@
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December'
+];
+
 function formatDateParts(year, month, day) {
   const yyyy = String(year).padStart(4, '0');
   const mm = String(month).padStart(2, '0');
@@ -190,4 +205,61 @@ export function summarizeTransactions(transactions) {
     totalAmount,
     totalTransactions
   };
+}
+
+export function getMonthNameFromIsoMonth(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const match = value.match(/^(\d{4})-(\d{2})$/);
+  if (!match) {
+    return '';
+  }
+
+  const monthIndex = Number.parseInt(match[2], 10) - 1;
+  if (Number.isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+    return '';
+  }
+
+  return MONTH_NAMES[monthIndex] ?? '';
+}
+
+function extractIsoMonthFromTransactions(transactions = []) {
+  if (!Array.isArray(transactions)) {
+    return '';
+  }
+
+  for (const transaction of transactions) {
+    if (!transaction || typeof transaction.date !== 'string') {
+      continue;
+    }
+
+    const match = transaction.date.match(/^(\d{4})-(\d{2})/);
+    if (match) {
+      return `${match[1]}-${match[2]}`;
+    }
+  }
+
+  return '';
+}
+
+export function resolveStatementMonthName({ month, fileName, transactions }) {
+  const trimmedMonth = typeof month === 'string' ? month.trim() : '';
+  const trimmedFileName = typeof fileName === 'string' ? fileName.trim() : '';
+
+  const candidates = [
+    trimmedMonth,
+    extractStatementMonth(trimmedFileName),
+    extractIsoMonthFromTransactions(transactions)
+  ].filter(Boolean);
+
+  for (const isoMonth of candidates) {
+    const name = getMonthNameFromIsoMonth(isoMonth);
+    if (name) {
+      return name;
+    }
+  }
+
+  return '';
 }

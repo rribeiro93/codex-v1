@@ -4,11 +4,13 @@ import {
   mapCsvRowToTransaction,
   extractStatementMonth,
   filterNonNegativeTransactions,
-  summarizeTransactions
+  summarizeTransactions,
+  resolveStatementMonthName
 } from './utils/transactionNormalizer';
 
 const createEmptyStatement = () => ({
   month: '',
+  monthName: '',
   totalAmount: 0,
   totalTransactions: 0,
   transactions: []
@@ -109,9 +111,15 @@ export default function CSVUploader() {
 
       const month = extractStatementMonth(file.name);
       const { totalAmount, totalTransactions } = summarizeTransactions(payableTransactions);
+      const monthName = resolveStatementMonthName({
+        month,
+        fileName: file.name,
+        transactions: payableTransactions
+      });
 
       const statementPayload = {
         month,
+        monthName,
         totalAmount,
         totalTransactions,
         transactions: payableTransactions
