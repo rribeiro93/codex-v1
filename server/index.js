@@ -1,8 +1,10 @@
+require('dotenv').config();
 require('./registerBabel');
 
 const { PORT } = require('./config');
 const { startAssetPipeline } = require('./assetBuilder');
 const { createServerApp } = require('./createApp');
+const { disconnectFromDatabase } = require('./database');
 
 async function start() {
   let disposeAssets = null;
@@ -28,7 +30,18 @@ async function start() {
         process.exit(0);
       });
       setTimeout(() => process.exit(0), 1000);
+      try {
+        await disconnectFromDatabase();
+      } catch (dbError) {
+        console.error('Failed to disconnect database', dbError);
+      }
       return;
+    }
+
+    try {
+      await disconnectFromDatabase();
+    } catch (dbError) {
+      console.error('Failed to disconnect database', dbError);
     }
 
     process.exit(0);
@@ -39,7 +52,7 @@ async function start() {
 
   try {
     disposeAssets = await startAssetPipeline();
-    const app = createServerApp();
+    const app = await createServerApp();
 
     serverInstance = app.listen(PORT, () => {
       console.log(`Server listening on http://localhost:${PORT}`);
@@ -52,6 +65,11 @@ async function start() {
       } catch (disposeError) {
         console.error('Failed to dispose asset watcher', disposeError);
       }
+    }
+    try {
+      await disconnectFromDatabase();
+    } catch (dbError) {
+      console.error('Failed to disconnect database', dbError);
     }
     process.exit(1);
   }

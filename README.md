@@ -15,6 +15,17 @@ npm run dev
 
 The development server starts on [http://localhost:3000](http://localhost:3000). Changes in `server/` or `src/` automatically restart the server via `nodemon`, and the client bundle is rebuilt in watch mode by ESBuild.
 
+### Environment variables
+
+Create a `.env` file (see `.env` for defaults) to supply MongoDB connection details:
+
+```
+MONGODB_URI=mongodb://root:example@localhost:27017/?authSource=admin
+MONGODB_DB_NAME=codex
+```
+
+When using the provided `docker-compose.yml`, the defaults connect to the MongoDB instance started by Docker.
+
 ## Production build
 
 ```bash
