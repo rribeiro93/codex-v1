@@ -19,6 +19,8 @@ export default function CSVUploader() {
   const [statement, setStatement] = useState(createEmptyStatement);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const openFilePicker = () => {
     if (fileInputRef.current) {
@@ -28,6 +30,52 @@ export default function CSVUploader() {
 
   const resetStatement = () => {
     setStatement(createEmptyStatement());
+    setSuccessMessage('');
+  };
+
+  const persistStatement = async (payload, sourceFileName) => {
+    if (typeof fetch !== 'function') {
+      return;
+    }
+
+    setIsSaving(true);
+    setSuccessMessage('');
+
+    try {
+      const response = await fetch('/api/statements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...payload,
+          fileName: sourceFileName
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const body = await response.json();
+      const identifier =
+        body && typeof body.statementId === 'string' ? body.statementId : '';
+      const persistedTransactions =
+        body && Number.isFinite(body.totalTransactions)
+          ? body.totalTransactions
+          : payload.totalTransactions;
+
+      const message = identifier
+        ? `Saved ${persistedTransactions} transactions to the database (id ${identifier}).`
+        : `Saved ${persistedTransactions} transactions to the database.`;
+
+      setSuccessMessage(message);
+    } catch (err) {
+      console.error('Failed to persist statement', err);
+      setError('Failed to save the statement to the database. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleFileSelection = async (event) => {
@@ -37,6 +85,7 @@ export default function CSVUploader() {
     }
 
     setError('');
+    setSuccessMessage('');
     resetStatement();
     setFileName(file.name);
 
@@ -61,12 +110,15 @@ export default function CSVUploader() {
       const month = extractStatementMonth(file.name);
       const { totalAmount, totalTransactions } = summarizeTransactions(payableTransactions);
 
-      setStatement({
+      const statementPayload = {
         month,
         totalAmount,
         totalTransactions,
         transactions: payableTransactions
-      });
+      };
+
+      setStatement(statementPayload);
+      await persistStatement(statementPayload, file.name);
     } catch (err) {
       setError('Failed to read the selected file. Please try again.');
       console.error(err);
@@ -93,6 +145,8 @@ export default function CSVUploader() {
           Choose file
         </button>
         {fileName && <p style={styles.fileName}>Selected: {fileName}</p>}
+        {isSaving && <p style={styles.status}>Saving statement to database...</p>}
+        {successMessage && <p style={styles.success}>{successMessage}</p>}
         {error && <p style={styles.error}>{error}</p>}
       </div>
       <div style={styles.preview}>
@@ -145,6 +199,14 @@ const styles = {
   fileName: {
     margin: 0,
     color: '#facc15'
+  },
+  status: {
+    margin: 0,
+    color: '#7dd3fc'
+  },
+  success: {
+    margin: 0,
+    color: '#4ade80'
   },
   error: {
     margin: 0,
