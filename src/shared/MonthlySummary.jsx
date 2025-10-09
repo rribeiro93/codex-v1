@@ -139,9 +139,6 @@ export default function MonthlySummary() {
 
   return (
     <section style={styles.wrapper}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>Monthly totals</h2>
-      </div>
       {renderPagination()}
       {error && <p style={styles.error}>{error}</p>}
       {!error && !hasYears && !isLoading && (
@@ -207,17 +204,6 @@ const styles = {
     flexDirection: 'column',
     gap: '1.5rem',
     textAlign: 'left'
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '1rem'
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.75rem',
-    color: '#f8fafc'
   },
   pagination: {
     display: 'flex',
