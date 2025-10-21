@@ -297,6 +297,101 @@ async function createServerApp() {
     }
   });
 
+  app.get('/api/statements/transactions', async (req, res) => {
+    const db = req.app.locals.db;
+    const rawMonth = typeof req.query.month === 'string' ? req.query.month.trim() : '';
+
+    if (!rawMonth) {
+      return res.status(400).json({ error: 'Month query parameter is required.' });
+    }
+
+    const isUnknownMonth = rawMonth.toLowerCase() === 'unknown';
+    const monthQuery = isUnknownMonth
+      ? {
+          $or: [
+            { month: { $in: ['', null] } },
+            { month: { $exists: false } }
+          ]
+        }
+      : { month: rawMonth };
+
+    try {
+      const statements = await db
+        .collection('statements')
+        .find(monthQuery, {
+          projection: {
+            transactions: 1,
+            monthName: 1,
+            fileName: 1,
+            month: 1,
+            _id: 1
+          }
+        })
+        .toArray();
+
+      if (!statements.length) {
+        return res.status(200).json({
+          month: rawMonth,
+          monthName: isUnknownMonth ? 'Unknown' : getMonthNameFromIsoMonth(rawMonth) || '',
+          transactions: []
+        });
+      }
+
+      const transactions = [];
+      for (const statement of statements) {
+        const statementTransactions = Array.isArray(statement.transactions)
+          ? statement.transactions
+          : [];
+        for (const transaction of statementTransactions) {
+          if (!transaction || typeof transaction !== 'object') {
+            continue;
+          }
+          const normalized = sanitizeTransaction(transaction);
+          if (normalized) {
+            transactions.push({
+              ...normalized,
+              statementId: statement._id ? String(statement._id) : '',
+              fileName: typeof statement.fileName === 'string' ? statement.fileName : ''
+            });
+          }
+        }
+      }
+
+      transactions.sort((a, b) => {
+        const aDate = Date.parse(a.date);
+        const bDate = Date.parse(b.date);
+        if (Number.isNaN(aDate) && Number.isNaN(bDate)) {
+          return 0;
+        }
+        if (Number.isNaN(aDate)) {
+          return 1;
+        }
+        if (Number.isNaN(bDate)) {
+          return -1;
+        }
+        return bDate - aDate;
+      });
+
+      const monthNameFromStatements = statements.find(
+        (statement) => typeof statement.monthName === 'string' && statement.monthName.trim()
+      );
+
+      const resolvedMonthName =
+        (monthNameFromStatements ? monthNameFromStatements.monthName.trim() : '') ||
+        (isUnknownMonth ? 'Unknown' : getMonthNameFromIsoMonth(rawMonth)) ||
+        '';
+
+      res.status(200).json({
+        month: isUnknownMonth ? '' : rawMonth,
+        monthName: resolvedMonthName,
+        transactions
+      });
+    } catch (error) {
+      console.error('Failed to load transactions', error);
+      res.status(500).json({ error: 'Failed to load transactions.' });
+    }
+  });
+
   app.get('*', (req, res) => {
     const html = renderReactApp(req.url);
     res.status(200).send(html);
