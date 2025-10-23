@@ -20,7 +20,8 @@ function createPlaceViewModel(place) {
     sourcePlace,
     displayName: text || sourcePlace || 'Unknown place',
     category,
-    originalCategory: category
+    originalCategory: category,
+    status: typeof place.status === 'string' ? place.status.trim() : ''
   };
 }
 
@@ -101,6 +102,34 @@ export default function ManagePlaces() {
 
   const hasChanges = pendingUpdates.length > 0;
 
+  const categorizedCount = useMemo(() => {
+    if (!places.length) {
+      return 0;
+    }
+
+    return places.reduce((acc, place) => {
+      const status = typeof place.status === 'string' ? place.status.toLowerCase() : '';
+      if (status === 'labeled') {
+        return acc + 1;
+      }
+      return acc;
+    }, 0);
+  }, [places]);
+
+  const pendingCount = useMemo(() => {
+    if (!places.length) {
+      return 0;
+    }
+
+    return places.reduce((acc, place) => {
+      const status = typeof place.status === 'string' ? place.status.toLowerCase() : '';
+      if (status === 'pending' || (!status && !place.category)) {
+        return acc + 1;
+      }
+      return acc;
+    }, 0);
+  }, [places]);
+
   const handleCategoryChange = (placeId, value) => {
     setSaveMessage('');
     setPlaces((previousPlaces) =>
@@ -153,10 +182,12 @@ export default function ManagePlaces() {
           }
           const trimmedCategory =
             typeof update.category === 'string' ? update.category.trim() : '';
+          const nextStatus = trimmedCategory ? 'labeled' : 'pending';
           return {
             ...place,
             category: trimmedCategory,
-            originalCategory: trimmedCategory
+            originalCategory: trimmedCategory,
+            status: nextStatus
           };
         })
       );
@@ -177,10 +208,10 @@ export default function ManagePlaces() {
       <header style={styles.header}>
         <div>
           <h2 style={styles.title}>Manage Places</h2>
-          <p style={styles.subtitle}>
-            Review all known places and update their categories. Saved categories will be used by
-            future automations.
-          </p>
+          <div style={styles.subtitleWrapper}>
+            <p style={styles.subtitleLine}>Categorized: {categorizedCount}</p>
+            <p style={styles.subtitleLine}>Pending: {pendingCount}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -252,10 +283,16 @@ const styles = {
     margin: 0,
     fontSize: '1.75rem'
   },
-  subtitle: {
+  subtitleWrapper: {
     margin: '0.5rem 0 0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.35rem'
+  },
+  subtitleLine: {
+    margin: 0,
     color: '#cbd5f5',
-    maxWidth: '48ch'
+    fontSize: '0.95rem'
   },
   saveButton: {
     padding: '0.75rem 1.75rem',
@@ -294,8 +331,8 @@ const styles = {
   list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem',
-    maxHeight: '60vh',
+    gap: '.2rem',
+    maxHeight: '80vh',
     overflowY: 'auto',
     paddingRight: '0.5rem'
   },
@@ -304,12 +341,12 @@ const styles = {
     gap: '1rem',
     alignItems: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    borderRadius: '0.85rem',
     border: '1px solid rgba(148, 163, 184, 0.2)',
-    padding: '1rem 1.5rem'
+    padding: '1rem 1.5rem',
+    justifyContent: 'center'
   },
   placeInfo: {
-    flex: '2 1 360px',
+    flex: '1 1 360px',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.35rem'
