@@ -8,9 +8,11 @@
     "build:client": "esbuild src/client/index.jsx --bundle --sourcemap --outfile=dist/public/assets/client.js --public-path=/assets --loader:.js=jsx --loader:.jsx=jsx",
     "start": "NODE_ENV=production node server/index.js",
     "extract:places": "node server/scripts/extractPlaces.js",
-    "export:labeled-places": "node server/scripts/exportLabeledPlaces.js"
+    "export:labeled-places": "node server/scripts/exportLabeledPlaces.js",
+    "categorize:statements": "node server/scripts/categorizeStatements.js"
   },
   "dependencies": {
+    "@tensorflow/tfjs-node": "^4.16.0",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
     "mongodb": "^6.20.0",
