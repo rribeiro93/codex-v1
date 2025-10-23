@@ -42,7 +42,8 @@ export default function MonthlySummary() {
     sortedTransactions,
     sortColumn,
     sortDirection,
-    handleSort
+    handleSort,
+    yearlyAverage
   } = useMonthlySummary();
 
   const transactionsLabel = selectedMonthLabel || selectedMonth || '';
@@ -66,7 +67,12 @@ export default function MonthlySummary() {
           No statements found for {selectedYear}. Upload CSV files to populate this chart.
         </p>
       )}
-      <SummaryChart data={data} selectedYear={selectedYear} onBarClick={handleBarClick} />
+      <SummaryChart
+        data={data}
+        selectedYear={selectedYear}
+        onBarClick={handleBarClick}
+        averageAmount={yearlyAverage}
+      />
       <TransactionsSection
         selectedMonth={selectedMonth}
         label={transactionsLabel}

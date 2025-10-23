@@ -15,7 +15,22 @@ const styles = {
     width: '100%',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
-    padding: '1.5rem'
+    padding: '1.5rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem'
+  },
+  chartHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  averageLabel: {
+    margin: 0,
+    color: '#cbd5f5',
+    fontSize: '1rem',
+    fontWeight: 600
   },
   tooltip: {
     backgroundColor: 'rgba(15, 23, 42, 0.85)',
@@ -25,9 +40,14 @@ const styles = {
   }
 };
 
-export default function SummaryChart({ data, selectedYear, onBarClick }) {
+export default function SummaryChart({ data, selectedYear, onBarClick, averageAmount = 0 }) {
+  const formattedAverage = currencyFormatter.format(Number.isFinite(averageAmount) ? averageAmount : 0);
+
   return (
     <div style={styles.chartContainer}>
+      <div style={styles.chartHeader}>
+        <p style={styles.averageLabel}>Average: {formattedAverage}</p>
+      </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />

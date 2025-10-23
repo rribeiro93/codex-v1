@@ -12,7 +12,8 @@ const initialState = {
   error: '',
   transactionsError: '',
   sortColumn: '',
-  sortDirection: 'asc'
+  sortDirection: 'asc',
+  yearlyAverage: 0
 };
 
 const resolveSortValue = (item, columnKey) => {
@@ -65,7 +66,8 @@ export function useMonthlySummary() {
     error,
     transactionsError,
     sortColumn,
-    sortDirection
+    sortDirection,
+    yearlyAverage
   } = state;
 
   const hasData = data.length > 0;
@@ -89,6 +91,7 @@ export function useMonthlySummary() {
         selectedMonthLabel: '',
         sortColumn: '',
         sortDirection: 'asc',
+        yearlyAverage: 0,
         ...(typeof year === 'string' && year ? { selectedYear: year } : {})
       }));
 
@@ -129,6 +132,11 @@ export function useMonthlySummary() {
           };
         });
 
+        const averageTotal =
+          normalized.length > 0
+            ? normalized.reduce((acc, item) => acc + item.totalAmount, 0) / normalized.length
+            : 0;
+
         setState((prev) => ({
           ...prev,
           data: normalized,
@@ -142,7 +150,8 @@ export function useMonthlySummary() {
           selectedMonthLabel: '',
           isTransactionsLoading: false,
           sortColumn: '',
-          sortDirection: 'asc'
+          sortDirection: 'asc',
+          yearlyAverage: averageTotal
         }));
       } catch (err) {
         console.error('Failed to load monthly summary', err);
@@ -159,7 +168,8 @@ export function useMonthlySummary() {
           error: 'Unable to load monthly totals. Please try again.',
           transactionsError: '',
           sortColumn: '',
-          sortDirection: 'asc'
+          sortDirection: 'asc',
+          yearlyAverage: 0
         }));
       }
     },
@@ -403,6 +413,7 @@ export function useMonthlySummary() {
     sortedTransactions,
     sortColumn,
     sortDirection,
-    handleSort
+    handleSort,
+    yearlyAverage
   };
 }
