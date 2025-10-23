@@ -5,6 +5,25 @@ import {
   formatTransactionDate
 } from '../utils/formatters';
 
+function isInstallmentTransaction(installments) {
+  if (!installments || typeof installments !== 'object') {
+    return false;
+  }
+
+  const current = Number.parseInt(installments.current, 10);
+  const total = Number.parseInt(installments.total, 10);
+
+  if (Number.isNaN(total) || total <= 1) {
+    return false;
+  }
+
+  if (Number.isNaN(current) || current <= 0) {
+    return false;
+  }
+
+  return true;
+}
+
 const styles = {
   container: {
     width: '100%',
@@ -49,16 +68,11 @@ const styles = {
     borderCollapse: 'collapse'
   },
   tableHeader: {
-    textAlign: 'left',
     padding: '0.75rem 1rem',
     fontSize: '0.8rem',
-    textTransform: 'uppercase',
     letterSpacing: '0.05em',
     borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
     color: '#94a3b8'
-  },
-  tableHeaderNumeric: {
-    textAlign: 'right'
   },
   tableRow: {
     transition: 'background-color 0.2s ease'
@@ -75,10 +89,6 @@ const styles = {
     borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
     color: '#e2e8f0'
   },
-  tableCellNumeric: {
-    textAlign: 'right',
-    fontVariantNumeric: 'tabular-nums'
-  },
   headerButton: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -92,10 +102,6 @@ const styles = {
     font: 'inherit',
     cursor: 'pointer',
     textTransform: 'inherit'
-  },
-  headerButtonNumeric: {
-    justifyContent: 'flex-end',
-    width: '100%'
   },
   headerButtonActive: {
     color: '#38bdf8'
@@ -134,6 +140,27 @@ export default function TransactionsSection({
   }
 
   const showTable = !isLoading && !error && hasTransactions;
+  const installmentStats = Array.isArray(transactions)
+    ? transactions.reduce(
+        (acc, transaction) => {
+          if (!isInstallmentTransaction(transaction.installments)) {
+            return acc;
+          }
+
+          const amount = Number(transaction.amount);
+          const numericAmount = Number.isFinite(amount) ? amount : 0;
+
+          return {
+            count: acc.count + 1,
+            total: acc.total + numericAmount
+          };
+        },
+        { count: 0, total: 0 }
+      )
+    : { count: 0, total: 0 };
+
+  const installmentCount = installmentStats.count;
+  const installmentTotalAmount = installmentStats.total;
 
   const renderSortIndicator = (columnKey) => {
     const isActive = sortColumn === columnKey;
@@ -173,6 +200,7 @@ export default function TransactionsSection({
           Transactions
           {label ? ` • ${label}` : ''}
         </h2>
+        <span>{`Installments: ${installmentCount} | ${formatCurrency(installmentTotalAmount)}`}</span>
       </div>
       {isLoading && <p style={styles.loadingMessage}>Loading transactions...</p>}
       {error && !isLoading && <p style={styles.error}>{error}</p>}
@@ -190,10 +218,7 @@ export default function TransactionsSection({
                 {columns.map((column) => (
                   <th
                     key={column.key}
-                    style={{
-                      ...styles.tableHeader,
-                      ...(column.isNumeric ? styles.tableHeaderNumeric : null)
-                    }}
+                    style={styles.tableHeader}
                     aria-sort={getAriaSort(column.key)}
                   >
                     <button
@@ -202,7 +227,6 @@ export default function TransactionsSection({
                       aria-label={getSortButtonLabel(column.key, column.label)}
                       style={{
                         ...styles.headerButton,
-                        ...(column.isNumeric ? styles.headerButtonNumeric : null),
                         ...(sortColumn === column.key ? styles.headerButtonActive : null)
                       }}
                     >
@@ -227,9 +251,7 @@ export default function TransactionsSection({
                   <td style={styles.tableCell}>{transaction.category || 'N/A'}</td>
                   <td style={styles.tableCell}>{transaction.owner || 'N/A'}</td>
                   <td style={styles.tableCell}>{formatInstallments(transaction.installments)}</td>
-                  <td style={{ ...styles.tableCell, ...styles.tableCellNumeric }}>
-                    {formatCurrency(transaction.amount)}
-                  </td>
+                  <td style={styles.tableCell}>{formatCurrency(transaction.amount)}</td>
                 </tr>
               ))}
             </tbody>

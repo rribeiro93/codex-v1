@@ -31,7 +31,7 @@ export const formatTransactionDate = (value) => {
 
 export const formatInstallments = (installments) => {
   if (!installments || typeof installments !== 'object') {
-    return 'N/A';
+    return '-';
   }
 
   const current = Number.parseInt(installments.current, 10);
