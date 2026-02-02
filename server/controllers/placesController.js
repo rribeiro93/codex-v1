@@ -10,12 +10,22 @@ function formatPlaceDocument(doc) {
     return null;
   }
 
+  const cleanNameValue = typeof doc.cleanName === 'string' ? doc.cleanName.trim() : '';
+  const textValue = typeof doc.text === 'string' ? doc.text.trim() : '';
+  const transactionValue = typeof doc.transaction === 'string' ? doc.transaction.trim() : '';
+  const sourcePlaceValue = typeof doc.sourcePlace === 'string' ? doc.sourcePlace.trim() : '';
+  const cleanNameSource = cleanNameValue || textValue;
+  const transactionSource = transactionValue || sourcePlaceValue;
+
+  const updatedAtValue = doc.updatedAt ? new Date(doc.updatedAt) : null;
+
   return {
     id,
-    text: typeof doc.text === 'string' ? doc.text : '',
-    sourcePlace: typeof doc.sourcePlace === 'string' ? doc.sourcePlace : '',
+    cleanName: cleanNameSource,
+    transaction: transactionSource,
     category: typeof doc.category === 'string' ? doc.category : '',
-    status: typeof doc.status === 'string' ? doc.status : ''
+    status: typeof doc.status === 'string' ? doc.status.trim() : '',
+    updatedAt: updatedAtValue ? updatedAtValue.toISOString() : ''
   };
 }
 
@@ -24,19 +34,22 @@ async function handleGetPlaces(req, res) {
 
   try {
     const rawPlaces = await db
-      .collection('places')
+      .collection('transaction_mappings')
       .find(
         {},
         {
           projection: {
+            cleanName: 1,
+            transaction: 1,
             text: 1,
             sourcePlace: 1,
             category: 1,
-            status: 1
+            status: 1,
+            updatedAt: 1
           }
         }
       )
-      .sort({ text: 1 })
+      .sort({ transaction: 1 })
       .toArray();
 
     const places = rawPlaces.map(formatPlaceDocument).filter(Boolean);

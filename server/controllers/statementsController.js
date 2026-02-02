@@ -112,6 +112,78 @@ async function handleGetSummary(req, res) {
               }
             },
             {
+              $addFields: {
+                installmentBreakdown: {
+                  $cond: [
+                    { $isArray: '$transactions' },
+                    {
+                      $reduce: {
+                        input: '$transactions',
+                        initialValue: { installment: 0, total: 0 },
+                        in: {
+                          installment: {
+                            $add: [
+                              '$$value.installment',
+                              {
+                                $cond: [
+                                  {
+                                    $and: [
+                                      { $ne: ['$$this.installments', null] },
+                                      { $ne: ['$$this.installments', undefined] },
+                                      { $gt: ['$$this.installments.total', 1] },
+                                      { $gt: ['$$this.installments.current', 0] },
+                                      { $ne: ['$$this.amount', null] },
+                                      { $ne: ['$$this.amount', undefined] }
+                                    ]
+                                  },
+                                  '$$this.amount',
+                                  0
+                                ]
+                              }
+                            ]
+                          },
+                          total: {
+                            $add: [
+                              '$$value.total',
+                              {
+                                $cond: [
+                                  {
+                                    $and: [
+                                      { $ne: ['$$this.amount', null] },
+                                      { $ne: ['$$this.amount', undefined] }
+                                    ]
+                                  },
+                                  '$$this.amount',
+                                  0
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    { installment: 0, total: 0 }
+                  ]
+                }
+              }
+            },
+            {
+              $addFields: {
+                installmentAmount: '$installmentBreakdown.installment',
+                nonInstallmentAmount: {
+                  $max: [
+                    0,
+                    {
+                      $subtract: [
+                        '$installmentBreakdown.total',
+                        '$installmentBreakdown.installment'
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
               $group: {
                 _id: {
                   $cond: [
@@ -129,7 +201,35 @@ async function handleGetSummary(req, res) {
                     ]
                   }
                 },
-                monthName: { $first: { $ifNull: ['$monthName', ''] } }
+                monthName: { $first: { $ifNull: ['$monthName', ''] } },
+                installmentAmount: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $ne: ['$installmentAmount', null] },
+                          { $ne: ['$installmentAmount', undefined] }
+                        ]
+                      },
+                      '$installmentAmount',
+                      0
+                    ]
+                  }
+                },
+                nonInstallmentAmount: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $ne: ['$nonInstallmentAmount', null] },
+                          { $ne: ['$nonInstallmentAmount', undefined] }
+                        ]
+                      },
+                      '$nonInstallmentAmount',
+                      0
+                    ]
+                  }
+                }
               }
             },
             { $sort: { _id: 1 } }
@@ -145,6 +245,15 @@ async function handleGetSummary(req, res) {
           typeof entry.totalAmount === 'number' && Number.isFinite(entry.totalAmount)
             ? entry.totalAmount
             : 0;
+        const installmentAmount =
+          typeof entry.installmentAmount === 'number' && Number.isFinite(entry.installmentAmount)
+            ? entry.installmentAmount
+            : 0;
+        const nonInstallmentAmount =
+          typeof entry.nonInstallmentAmount === 'number' &&
+          Number.isFinite(entry.nonInstallmentAmount)
+            ? entry.nonInstallmentAmount
+            : 0;
         const derivedName =
           typeof entry.monthName === 'string' && entry.monthName
             ? entry.monthName
@@ -153,7 +262,9 @@ async function handleGetSummary(req, res) {
         return {
           month: monthValue,
           monthName: derivedName || 'Unknown',
-          totalAmount: Number.parseFloat(amount.toFixed(2))
+          totalAmount: Number.parseFloat(amount.toFixed(2)),
+          installmentAmount: Number.parseFloat(installmentAmount.toFixed(2)),
+          nonInstallmentAmount: Number.parseFloat(nonInstallmentAmount.toFixed(2))
         };
       });
 

@@ -3,6 +3,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,6 +43,10 @@ const styles = {
 
 export default function SummaryChart({ data, selectedYear, onBarClick, averageAmount = 0 }) {
   const formattedAverage = currencyFormatter.format(Number.isFinite(averageAmount) ? averageAmount : 0);
+  const tooltipLabels = {
+    installmentAmount: 'Installments',
+    nonInstallmentAmount: 'Non-installment total'
+  };
 
   return (
     <div style={styles.chartContainer}>
@@ -66,25 +71,51 @@ export default function SummaryChart({ data, selectedYear, onBarClick, averageAm
           />
           <Tooltip
             cursor={{ fill: 'rgba(148, 163, 184, 0.15)' }}
-            formatter={(value) => [currencyFormatter.format(Number(value)), 'Total']}
+            formatter={(value, name) => {
+              const numericValue = Number(value);
+              const safeValue = Number.isFinite(numericValue) ? numericValue : 0;
+              return [currencyFormatter.format(safeValue), tooltipLabels[name] ?? 'Total'];
+            }}
             labelFormatter={(label, payload) => {
               if (payload && payload.length) {
                 const { displayMonth, month } = payload[0].payload;
+                const total = payload[0]?.payload?.totalAmount;
+                const totalLabel =
+                  typeof total === 'number' && Number.isFinite(total)
+                    ? ` • Total ${currencyFormatter.format(total)}`
+                    : '';
                 if (displayMonth && selectedYear) {
-                  return `${displayMonth} ${selectedYear}`;
+                  return `${displayMonth} ${selectedYear}${totalLabel}`;
                 }
                 if (displayMonth) {
-                  return displayMonth;
+                  return `${displayMonth}${totalLabel}`;
                 }
                 if (month) {
-                  return month;
+                  return `${month}${totalLabel}`;
                 }
               }
               return `Month: ${label}`;
             }}
             contentStyle={styles.tooltip}
           />
-          <Bar dataKey="totalAmount" fill="#38bdf8" radius={[6, 6, 0, 0]} onClick={onBarClick} />
+          <Legend
+            wrapperStyle={{ color: '#cbd5f5' }}
+            formatter={(value) => tooltipLabels[value] ?? value}
+          />
+          <Bar
+            dataKey="nonInstallmentAmount"
+            stackId="monthlyTotals"
+            fill="#38bdf8"
+            radius={[0, 0, 0, 0]}
+            onClick={onBarClick}
+          />
+          <Bar
+            dataKey="installmentAmount"
+            stackId="monthlyTotals"
+            fill="#f97316"
+            radius={[6, 6, 0, 0]}
+            onClick={onBarClick}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>

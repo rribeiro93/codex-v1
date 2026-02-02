@@ -122,13 +122,26 @@ export function useMonthlySummary() {
             typeof item.totalAmount === 'number' && Number.isFinite(item.totalAmount)
               ? item.totalAmount
               : 0;
+          const installmentAmount =
+            typeof item.installmentAmount === 'number' && Number.isFinite(item.installmentAmount)
+              ? item.installmentAmount
+              : 0;
+          const nonInstallmentAmount =
+            typeof item.nonInstallmentAmount === 'number' &&
+            Number.isFinite(item.nonInstallmentAmount)
+              ? item.nonInstallmentAmount
+              : 0;
+          const safeInstallments = installmentAmount > 0 ? installmentAmount : 0;
+          const safeNonInstallments = nonInstallmentAmount > 0 ? nonInstallmentAmount : 0;
           const displayMonth = monthName !== 'Unknown' ? monthName : month;
 
           return {
             month,
             monthName,
             displayMonth,
-            totalAmount
+            totalAmount,
+            installmentAmount: safeInstallments,
+            nonInstallmentAmount: safeNonInstallments
           };
         });
 

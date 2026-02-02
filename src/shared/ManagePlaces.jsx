@@ -1,5 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
+function formatUpdatedAt(value) {
+  if (!value || typeof value !== 'string') {
+    return 'Not updated yet';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Not updated yet';
+  }
+
+  return parsed.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 function createPlaceViewModel(place) {
   if (!place || typeof place !== 'object') {
     return null;
@@ -10,18 +29,27 @@ function createPlaceViewModel(place) {
     return null;
   }
 
-  const text = typeof place.text === 'string' ? place.text.trim() : '';
-  const sourcePlace = typeof place.sourcePlace === 'string' ? place.sourcePlace.trim() : '';
+  const cleanName = typeof place.cleanName === 'string' ? place.cleanName.trim() : '';
+  const transaction = typeof place.transaction === 'string' ? place.transaction.trim() : '';
   const category = typeof place.category === 'string' ? place.category : '';
+
+  const updatedAt =
+    typeof place.updatedAt === 'string' && place.updatedAt
+      ? place.updatedAt
+      : typeof place.updatedAt === 'number'
+        ? new Date(place.updatedAt).toISOString()
+        : '';
 
   return {
     id,
-    text,
-    sourcePlace,
-    displayName: text || sourcePlace || 'Unknown place',
+    cleanName,
+    transaction,
+    displayName: cleanName || transaction || 'Unknown place',
     category,
     originalCategory: category,
-    status: typeof place.status === 'string' ? place.status.trim() : ''
+    status: typeof place.status === 'string' ? place.status.trim() : '',
+    updatedAt,
+    updatedAtLabel: formatUpdatedAt(updatedAt)
   };
 }
 
@@ -102,34 +130,6 @@ export default function ManagePlaces() {
 
   const hasChanges = pendingUpdates.length > 0;
 
-  const categorizedCount = useMemo(() => {
-    if (!places.length) {
-      return 0;
-    }
-
-    return places.reduce((acc, place) => {
-      const status = typeof place.status === 'string' ? place.status.toLowerCase() : '';
-      if (status === 'labeled') {
-        return acc + 1;
-      }
-      return acc;
-    }, 0);
-  }, [places]);
-
-  const pendingCount = useMemo(() => {
-    if (!places.length) {
-      return 0;
-    }
-
-    return places.reduce((acc, place) => {
-      const status = typeof place.status === 'string' ? place.status.toLowerCase() : '';
-      if (status === 'pending' || (!status && !place.category)) {
-        return acc + 1;
-      }
-      return acc;
-    }, 0);
-  }, [places]);
-
   const handleCategoryChange = (placeId, value) => {
     setSaveMessage('');
     setPlaces((previousPlaces) =>
@@ -174,6 +174,8 @@ export default function ManagePlaces() {
       const updatedCount = Number.isFinite(body?.updatedCount) ? body.updatedCount : 0;
       const matchedCount = Number.isFinite(body?.matchedCount) ? body.matchedCount : 0;
 
+      const updatedAtIso = new Date().toISOString();
+
       setPlaces((previousPlaces) =>
         previousPlaces.map((place) => {
           const update = updates.find((item) => item.id === place.id);
@@ -187,7 +189,9 @@ export default function ManagePlaces() {
             ...place,
             category: trimmedCategory,
             originalCategory: trimmedCategory,
-            status: nextStatus
+            status: nextStatus,
+            updatedAt: updatedAtIso,
+            updatedAtLabel: formatUpdatedAt(updatedAtIso)
           };
         })
       );
@@ -208,10 +212,6 @@ export default function ManagePlaces() {
       <header style={styles.header}>
         <div>
           <h2 style={styles.title}>Manage Places</h2>
-          <div style={styles.subtitleWrapper}>
-            <p style={styles.subtitleLine}>Categorized: {categorizedCount}</p>
-            <p style={styles.subtitleLine}>Pending: {pendingCount}</p>
-          </div>
         </div>
         <button
           type="button"
@@ -240,9 +240,10 @@ export default function ManagePlaces() {
             <div key={place.id} style={styles.row} role="row">
               <div style={styles.placeInfo} role="gridcell">
                 <p style={styles.placeName}>{place.displayName}</p>
-                {place.sourcePlace && place.sourcePlace !== place.displayName && (
-                  <p style={styles.placeSource}>Original: {place.sourcePlace}</p>
+                {place.transaction && place.transaction !== place.displayName && (
+                  <p style={styles.placeSource}>Transaction: {place.transaction}</p>
                 )}
+                <p style={styles.placeMeta}>Updated: {place.updatedAtLabel}</p>
               </div>
               <div style={styles.inputWrapper} role="gridcell">
                 <input
@@ -282,17 +283,6 @@ const styles = {
   title: {
     margin: 0,
     fontSize: '1.75rem'
-  },
-  subtitleWrapper: {
-    margin: '0.5rem 0 0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.35rem'
-  },
-  subtitleLine: {
-    margin: 0,
-    color: '#cbd5f5',
-    fontSize: '0.95rem'
   },
   saveButton: {
     padding: '0.75rem 1.75rem',
@@ -361,6 +351,11 @@ const styles = {
     margin: 0,
     color: '#94a3b8',
     fontSize: '0.85rem'
+  },
+  placeMeta: {
+    margin: 0,
+    color: '#cbd5f5',
+    fontSize: '0.8rem'
   },
   inputWrapper: {
     flex: '1 1 220px',

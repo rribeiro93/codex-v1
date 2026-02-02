@@ -36,7 +36,7 @@ async function extractPlaces() {
               }
             }
           },
-          sourcePlace: { $first: '$transactions.place' }
+          transaction: { $first: '$transactions.place' }
         }
       }
     ],
@@ -45,13 +45,13 @@ async function extractPlaces() {
 
   const existingPlacesCursor = await placesCollection.find(
     {},
-    { projection: { sourcePlace: 1 } }
+    { projection: { transaction: 1 } }
   );
 
   const existingPlaces = new Set();
   await existingPlacesCursor.forEach((doc) => {
-    if (doc && typeof doc.sourcePlace === 'string') {
-      existingPlaces.add(doc.sourcePlace.trim().toUpperCase());
+    if (doc && typeof doc.transaction === 'string') {
+      existingPlaces.add(doc.transaction.trim().toUpperCase());
     }
   });
 
@@ -70,11 +70,11 @@ async function extractPlaces() {
   };
 
   for await (const item of cursor) {
-    if (!item || !item._id || !item.sourcePlace || typeof item.sourcePlace !== 'string') {
+    if (!item || !item._id || !item.transaction || typeof item.transaction !== 'string') {
       continue;
     }
 
-    const upperSource = item.sourcePlace.trim().toUpperCase();
+    const upperSource = item.transaction.trim().toUpperCase();
     if (!upperSource) {
       continue;
     }
@@ -91,9 +91,9 @@ async function extractPlaces() {
     queuedOperations.push({
       insertOne: {
         document: {
-          text: normalizePlace(item.sourcePlace),
+          text: normalizePlace(item.transaction),
           category: '',
-          sourcePlace: item.sourcePlace,
+          transaction: item.transaction,
           status: 'pending',
           createdAt: new Date()
         }
