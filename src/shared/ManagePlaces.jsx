@@ -130,34 +130,6 @@ export default function ManagePlaces() {
 
   const hasChanges = pendingUpdates.length > 0;
 
-  const categorizedCount = useMemo(() => {
-    if (!places.length) {
-      return 0;
-    }
-
-    return places.reduce((acc, place) => {
-      const status = typeof place.status === 'string' ? place.status.toLowerCase() : '';
-      if (status === 'labeled') {
-        return acc + 1;
-      }
-      return acc;
-    }, 0);
-  }, [places]);
-
-  const pendingCount = useMemo(() => {
-    if (!places.length) {
-      return 0;
-    }
-
-    return places.reduce((acc, place) => {
-      const status = typeof place.status === 'string' ? place.status.toLowerCase() : '';
-      if (status === 'pending' || (!status && !place.category)) {
-        return acc + 1;
-      }
-      return acc;
-    }, 0);
-  }, [places]);
-
   const handleCategoryChange = (placeId, value) => {
     setSaveMessage('');
     setPlaces((previousPlaces) =>
@@ -240,10 +212,6 @@ export default function ManagePlaces() {
       <header style={styles.header}>
         <div>
           <h2 style={styles.title}>Manage Places</h2>
-          <div style={styles.subtitleWrapper}>
-            <p style={styles.subtitleLine}>Categorized: {categorizedCount}</p>
-            <p style={styles.subtitleLine}>Pending: {pendingCount}</p>
-          </div>
         </div>
         <button
           type="button"
@@ -315,12 +283,6 @@ const styles = {
   title: {
     margin: 0,
     fontSize: '1.75rem'
-  },
-  subtitleWrapper: {
-    margin: '0.5rem 0 0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.35rem'
   },
   saveButton: {
     padding: '0.75rem 1.75rem',

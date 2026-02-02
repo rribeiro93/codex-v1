@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   formatCurrency,
   formatInstallments,
@@ -22,6 +22,13 @@ function isInstallmentTransaction(installments) {
   }
 
   return true;
+}
+
+function formatPercentage(value) {
+  if (!Number.isFinite(value)) {
+    return '0%';
+  }
+  return `${value.toFixed(1)}%`;
 }
 
 const styles = {
@@ -125,6 +132,26 @@ const styles = {
   },
   sortIndicatorHidden: {
     visibility: 'hidden'
+  },
+  breakdownHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem'
+  },
+  breakdownTitle: {
+    margin: 0,
+    fontSize: '1rem',
+    color: '#f8fafc'
+  },
+  breakdownTotal: {
+    margin: 0,
+    color: '#cbd5f5',
+    fontSize: '0.9rem'
+  },
+  numericCell: {
+    textAlign: 'right',
+    fontVariantNumeric: 'tabular-nums'
   }
 };
 
@@ -153,6 +180,47 @@ export default function TransactionsSection({
   }
 
   const showTable = !isLoading && !error && hasTransactions;
+  const categorySummary = useMemo(() => {
+    if (!Array.isArray(transactions) || !transactions.length) {
+      return { totalAmount: 0, items: [] };
+    }
+
+    const totalsByCategory = new Map();
+    let aggregate = 0;
+
+    for (const transaction of transactions) {
+      const amount = Number(transaction.amount);
+      const numericAmount = Number.isFinite(amount) ? amount : 0;
+      if (numericAmount < 0) {
+        continue;
+      }
+      const categoryValue =
+        typeof transaction.category === 'string' && transaction.category.trim()
+          ? transaction.category.trim()
+          : 'Uncategorized';
+      aggregate += numericAmount;
+      totalsByCategory.set(categoryValue, (totalsByCategory.get(categoryValue) ?? 0) + numericAmount);
+    }
+
+    if (!aggregate) {
+      return { totalAmount: 0, items: [] };
+    }
+
+    const items = Array.from(totalsByCategory.entries())
+      .map(([category, amount]) => ({
+        category,
+        amount: Number.parseFloat(amount.toFixed(2)),
+        percentage: Number.parseFloat(((amount / aggregate) * 100).toFixed(2))
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return {
+      totalAmount: Number.parseFloat(aggregate.toFixed(2)),
+      items
+    };
+  }, [transactions]);
+
+  const showCategorySummary = showTable && categorySummary.items.length > 0;
   const installmentStats = Array.isArray(transactions)
     ? transactions.reduce(
         (acc, transaction) => {
@@ -220,6 +288,51 @@ export default function TransactionsSection({
       {!error && !isLoading && !hasTransactions && (
         <p style={styles.emptyMessage}>No transactions found for this month.</p>
       )}
+      {showCategorySummary && (
+        <>
+          <div style={styles.breakdownHeader}>
+            <h3 style={styles.breakdownTitle}>Category breakdown</h3>
+            <p style={styles.breakdownTotal}>
+              Total {formatCurrency(categorySummary.totalAmount)}
+            </p>
+          </div>
+          <div style={styles.tableWrapper}>
+            <table
+              style={styles.table}
+              aria-label={
+                label ? `Category breakdown for ${label}` : 'Category breakdown by amount'
+              }
+            >
+              <thead>
+                <tr>
+                  <th style={styles.tableHeader}>Category</th>
+                  <th style={styles.tableHeader}>Total amount</th>
+                  <th style={styles.tableHeader}>Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categorySummary.items.map((item, index) => (
+                  <tr
+                    key={item.category}
+                    style={{
+                      ...styles.tableRow,
+                      ...(index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd)
+                    }}
+                  >
+                    <td style={styles.tableCell}>{item.category}</td>
+                    <td style={{ ...styles.tableCell, ...styles.numericCell }}>
+                      {formatCurrency(item.amount)}
+                    </td>
+                    <td style={{ ...styles.tableCell, ...styles.numericCell }}>
+                      {formatPercentage(item.percentage)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
       {showTable && (
         <div style={styles.tableWrapper}>
           <table
@@ -272,7 +385,7 @@ export default function TransactionsSection({
                       <div style={styles.placeCell}>
                         <span style={styles.placePrimary}>{primaryPlace}</span>
                         {showOriginal && (
-                          <span style={styles.placeSecondary}>Original: {placeValue}</span>
+                          <span style={styles.placeSecondary}>{placeValue}</span>
                         )}
                       </div>
                     </td>

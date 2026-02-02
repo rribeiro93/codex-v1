@@ -110,7 +110,7 @@ async function handleUpdatePlaceCategories(req, res) {
   }
 
   try {
-    const result = await db.collection('places').bulkWrite(operations, { ordered: false });
+    const result = await db.collection('transaction_mappings').bulkWrite(operations, { ordered: false });
     const modified = result?.modifiedCount ?? 0;
     const matched = result?.matchedCount ?? 0;
 

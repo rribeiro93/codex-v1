@@ -245,7 +245,7 @@ async function handleGetSummary(req, res) {
           .toArray()
       : [];
 
-    const summary = rawSummary
+    const normalizedSummary = rawSummary
       .filter((entry) => entry && typeof entry._id === 'string' && entry._id)
       .map((entry) => {
         const monthValue = typeof entry._id === 'string' && entry._id ? entry._id : 'Unknown';
@@ -275,6 +275,35 @@ async function handleGetSummary(req, res) {
           nonInstallmentAmount: Number.parseFloat(nonInstallmentAmount.toFixed(2))
         };
       });
+
+    let summary = normalizedSummary;
+    const hasValidYear = typeof targetYear === 'string' && /^\d{4}$/.test(targetYear);
+    if (hasValidYear) {
+      const monthKeys = Array.from({ length: 12 }, (_, index) => {
+        const monthNumber = String(index + 1).padStart(2, '0');
+        return `${targetYear}-${monthNumber}`;
+      });
+      const monthKeySet = new Set(monthKeys);
+      const summaryByMonth = new Map(summary.map((entry) => [entry.month, entry]));
+
+      const paddedSummary = monthKeys.map((monthKey) => {
+        const existing = summaryByMonth.get(monthKey);
+        if (existing) {
+          return existing;
+        }
+        const derivedName = getMonthNameFromIsoMonth(monthKey) || 'Unknown';
+        return {
+          month: monthKey,
+          monthName: derivedName,
+          totalAmount: 0,
+          installmentAmount: 0,
+          nonInstallmentAmount: 0
+        };
+      });
+
+      const unmatchedEntries = summary.filter((entry) => !monthKeySet.has(entry.month));
+      summary = [...paddedSummary, ...unmatchedEntries];
+    }
 
     res.status(200).json({
       summary,
