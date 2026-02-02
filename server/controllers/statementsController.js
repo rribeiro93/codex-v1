@@ -4,6 +4,14 @@ const {
   getMonthNameFromIsoMonth
 } = require('../utils/statements');
 
+const normalizeTransactionKey = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed.toUpperCase() : '';
+};
+
 async function handleCreateStatement(req, res) {
   const db = req.app.locals.db;
   const {
@@ -320,6 +328,7 @@ async function handleGetTransactions(req, res) {
     }
 
     const transactions = [];
+    const uniquePlaces = new Set();
     for (const statement of statements) {
       const statementTransactions = Array.isArray(statement.transactions)
         ? statement.transactions
@@ -330,6 +339,10 @@ async function handleGetTransactions(req, res) {
         }
         const normalized = sanitizeTransaction(transaction);
         if (normalized) {
+          const placeValue = typeof normalized.place === 'string' ? normalized.place : '';
+          if (placeValue) {
+            uniquePlaces.add(placeValue);
+          }
           transactions.push({
             ...normalized,
             statementId: statement._id ? String(statement._id) : '',
@@ -339,7 +352,45 @@ async function handleGetTransactions(req, res) {
       }
     }
 
-    transactions.sort((a, b) => {
+    let mappingDocs = [];
+    if (uniquePlaces.size) {
+      mappingDocs = await db
+        .collection('transaction_mappings')
+        .find(
+          { transaction: { $in: Array.from(uniquePlaces) } },
+          { projection: { transaction: 1, cleanName: 1, category: 1 } }
+        )
+        .toArray();
+    }
+
+    const mappingByKey = new Map();
+    for (const doc of mappingDocs) {
+      const key = normalizeTransactionKey(doc.transaction);
+      if (!key) {
+        continue;
+      }
+      mappingByKey.set(key, {
+        cleanName: typeof doc.cleanName === 'string' ? doc.cleanName : '',
+        category: typeof doc.category === 'string' ? doc.category : ''
+      });
+    }
+
+    const enrichedTransactions = transactions.map((transaction) => {
+      const lookupKey = normalizeTransactionKey(transaction.place);
+      const mapping = lookupKey ? mappingByKey.get(lookupKey) : null;
+      const mappedCategory =
+        typeof mapping?.category === 'string' ? mapping.category.trim() : '';
+      const cleanNameValue =
+        typeof mapping?.cleanName === 'string' ? mapping.cleanName.trim() : '';
+
+      return {
+        ...transaction,
+        cleanName: cleanNameValue,
+        category: mappedCategory || (typeof transaction.category === 'string' ? transaction.category : '')
+      };
+    });
+
+    enrichedTransactions.sort((a, b) => {
       const aDate = Date.parse(a.date);
       const bDate = Date.parse(b.date);
       if (Number.isNaN(aDate) && Number.isNaN(bDate)) {
@@ -366,7 +417,7 @@ async function handleGetTransactions(req, res) {
     res.status(200).json({
       month: isUnknownMonth ? '' : rawMonth,
       monthName: resolvedMonthName,
-      transactions
+      transactions: enrichedTransactions
     });
   } catch (error) {
     console.error('Failed to load transactions', error);

@@ -89,6 +89,19 @@ const styles = {
     borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
     color: '#e2e8f0'
   },
+  placeCell: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.2rem'
+  },
+  placePrimary: {
+    fontWeight: 600,
+    color: '#f8fafc'
+  },
+  placeSecondary: {
+    fontSize: '0.8rem',
+    color: '#94a3b8'
+  },
   headerButton: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -238,22 +251,38 @@ export default function TransactionsSection({
               </tr>
             </thead>
             <tbody>
-              {transactions.map((transaction, index) => (
-                <tr
-                  key={transaction.id || `${transaction.date}-${index}`}
-                  style={{
-                    ...styles.tableRow,
-                    ...(index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd)
-                  }}
-                >
-                  <td style={styles.tableCell}>{formatTransactionDate(transaction.date)}</td>
-                  <td style={styles.tableCell}>{transaction.place || 'N/A'}</td>
-                  <td style={styles.tableCell}>{transaction.category || 'N/A'}</td>
-                  <td style={styles.tableCell}>{transaction.owner || 'N/A'}</td>
-                  <td style={styles.tableCell}>{formatInstallments(transaction.installments)}</td>
-                  <td style={styles.tableCell}>{formatCurrency(transaction.amount)}</td>
-                </tr>
-              ))}
+              {transactions.map((transaction, index) => {
+                const cleanName =
+                  typeof transaction.cleanName === 'string' ? transaction.cleanName.trim() : '';
+                const placeValue =
+                  typeof transaction.place === 'string' ? transaction.place.trim() : '';
+                const primaryPlace = cleanName || placeValue || 'N/A';
+                const showOriginal = cleanName && placeValue && cleanName !== placeValue;
+
+                return (
+                  <tr
+                    key={transaction.id || `${transaction.date}-${index}`}
+                    style={{
+                      ...styles.tableRow,
+                      ...(index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd)
+                    }}
+                  >
+                    <td style={styles.tableCell}>{formatTransactionDate(transaction.date)}</td>
+                    <td style={styles.tableCell}>
+                      <div style={styles.placeCell}>
+                        <span style={styles.placePrimary}>{primaryPlace}</span>
+                        {showOriginal && (
+                          <span style={styles.placeSecondary}>Original: {placeValue}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={styles.tableCell}>{transaction.category || 'N/A'}</td>
+                    <td style={styles.tableCell}>{transaction.owner || 'N/A'}</td>
+                    <td style={styles.tableCell}>{formatInstallments(transaction.installments)}</td>
+                    <td style={styles.tableCell}>{formatCurrency(transaction.amount)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -37,7 +37,15 @@ const resolveSortValue = (item, columnKey) => {
       }
       return total * 1000 + current;
     }
-    case 'place':
+    case 'place': {
+      const cleanName = typeof item.cleanName === 'string' ? item.cleanName.trim() : '';
+      const place =
+        cleanName || (typeof item.place === 'string' ? item.place.trim() : '');
+      if (!place) {
+        return null;
+      }
+      return place.toLocaleLowerCase();
+    }
     case 'category':
     case 'owner': {
       const rawValue = typeof item[columnKey] === 'string' ? item[columnKey].trim() : '';
@@ -238,6 +246,8 @@ export function useMonthlySummary() {
         const normalizedTransactions = payloadTransactions.map((transaction, index) => {
           const date = typeof transaction.date === 'string' ? transaction.date : '';
           const place = typeof transaction.place === 'string' ? transaction.place : '';
+          const cleanName =
+            typeof transaction.cleanName === 'string' ? transaction.cleanName : '';
           const category =
             typeof transaction.category === 'string' ? transaction.category : '';
           const owner = typeof transaction.owner === 'string' ? transaction.owner : '';
@@ -265,6 +275,7 @@ export function useMonthlySummary() {
             id: statementId ? `${statementId}-${index}` : `${targetMonth}-${index}`,
             date,
             place,
+            cleanName,
             category,
             owner,
             amount,
