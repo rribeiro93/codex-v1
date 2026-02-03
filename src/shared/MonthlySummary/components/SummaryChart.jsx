@@ -13,13 +13,14 @@ import { currencyFormatter } from '../utils/formatters';
 
 const styles = {
   chartContainer: {
-    width: '100%',
+    width: 'min(900px, 100%)',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
     padding: '1.5rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem'
+    gap: '1rem',
+    alignSelf: 'center'
   },
   chartHeader: {
     display: 'flex',
@@ -44,14 +45,14 @@ const styles = {
 export default function SummaryChart({ data, selectedYear, onBarClick, averageAmount = 0 }) {
   const formattedAverage = currencyFormatter.format(Number.isFinite(averageAmount) ? averageAmount : 0);
   const tooltipLabels = {
-    installmentAmount: 'Installments',
-    nonInstallmentAmount: 'Non-installment total'
+    installmentAmount: 'Parcelado',
+    nonInstallmentAmount: 'A vista'
   };
 
   return (
     <div style={styles.chartContainer}>
       <div style={styles.chartHeader}>
-        <p style={styles.averageLabel}>Average: {formattedAverage}</p>
+        <p style={styles.averageLabel}>Média: {formattedAverage}</p>
       </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={data}>
@@ -85,7 +86,7 @@ export default function SummaryChart({ data, selectedYear, onBarClick, averageAm
                     ? ` • Total ${currencyFormatter.format(total)}`
                     : '';
                 if (displayMonth && selectedYear) {
-                  return `${displayMonth} ${selectedYear}${totalLabel}`;
+                  return `${displayMonth} ${totalLabel}`;
                 }
                 if (displayMonth) {
                   return `${displayMonth}${totalLabel}`;
@@ -94,7 +95,7 @@ export default function SummaryChart({ data, selectedYear, onBarClick, averageAm
                   return `${month}${totalLabel}`;
                 }
               }
-              return `Month: ${label}`;
+              return `Mês: ${label}`;
             }}
             contentStyle={styles.tooltip}
           />

@@ -387,7 +387,7 @@ async function handleGetTransactions(req, res) {
         .collection('transaction_mappings')
         .find(
           { transaction: { $in: Array.from(uniquePlaces) } },
-          { projection: { transaction: 1, cleanName: 1, category: 1 } }
+          { projection: { transaction: 1, cleanName: 1, category: 1, _id: 1 } }
         )
         .toArray();
     }
@@ -399,8 +399,10 @@ async function handleGetTransactions(req, res) {
         continue;
       }
       mappingByKey.set(key, {
+        id: doc._id ? String(doc._id) : '',
         cleanName: typeof doc.cleanName === 'string' ? doc.cleanName : '',
-        category: typeof doc.category === 'string' ? doc.category : ''
+        category: typeof doc.category === 'string' ? doc.category : '',
+        transaction: typeof doc.transaction === 'string' ? doc.transaction : ''
       });
     }
 
@@ -415,7 +417,10 @@ async function handleGetTransactions(req, res) {
       return {
         ...transaction,
         cleanName: cleanNameValue,
-        category: mappedCategory || (typeof transaction.category === 'string' ? transaction.category : '')
+        category:
+          mappedCategory || (typeof transaction.category === 'string' ? transaction.category : ''),
+        mappingId: mapping?.id || '',
+        mappingTransaction: mapping?.transaction || (typeof transaction.place === 'string' ? transaction.place : '')
       };
     });
 

@@ -4,9 +4,9 @@ import MonthlySummary from './MonthlySummary';
 import ManagePlaces from './ManagePlaces';
 
 const menuItems = [
-  { id: 'upload', label: 'Upload' },
-  { id: 'summary', label: 'Summary' },
-  { id: 'categories', label: 'Categories' }
+  { id: 'upload', label: 'Importar CSV' },
+  { id: 'summary', label: 'Resumo' },
+  { id: 'categories', label: 'Categorias' }
 ];
 
 export default function App() {
@@ -26,7 +26,7 @@ export default function App() {
   return (
     <div style={styles.app}>
       <header style={styles.topNav}>
-        <nav aria-label="Main navigation" style={styles.nav}>
+        <nav aria-label="Navegação principal" style={styles.nav}>
           <ul style={styles.navList}>
             {menuItems.map((item) => {
               const isActive = item.id === activePage;

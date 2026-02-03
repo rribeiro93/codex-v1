@@ -4,7 +4,8 @@ const styles = {
   pagination: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '0.5rem'
+    gap: '0.5rem',
+    justifyContent: 'center'
   },
   yearButton: {
     padding: '0.5rem 1.1rem',
@@ -29,7 +30,7 @@ export default function YearPagination({ years, selectedYear, isLoading, onSelec
   }
 
   return (
-    <nav style={styles.pagination} aria-label="Years">
+    <nav style={styles.pagination} aria-label="Anos">
       {years.map((yearOption) => {
         const isActive = yearOption === selectedYear;
         return (

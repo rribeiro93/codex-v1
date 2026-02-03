@@ -5,15 +5,14 @@ export const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
-  month: 'short',
-  year: 'numeric'
+  month: 'short'
 });
 
 export const formatCurrency = (value) => currencyFormatter.format(Number(value || 0));
 
 export const formatTransactionDate = (value) => {
   if (typeof value !== 'string' || !value) {
-    return 'N/A';
+    return 'Não disponível';
   }
 
   const parsed = Date.parse(value);
@@ -24,7 +23,7 @@ export const formatTransactionDate = (value) => {
   try {
     return dateFormatter.format(new Date(parsed));
   } catch (err) {
-    console.error('Failed to format transaction date', err);
+    console.error('Não foi possível formatar a data da transação', err);
   }
   return value;
 };
@@ -38,7 +37,7 @@ export const formatInstallments = (installments) => {
   const total = Number.parseInt(installments.total, 10);
 
   if (Number.isNaN(current) || Number.isNaN(total) || total <= 1) {
-    return 'N/A';
+    return 'Não disponível';
   }
 
   return `${current}/${total}`;

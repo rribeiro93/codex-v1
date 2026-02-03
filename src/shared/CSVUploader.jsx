@@ -68,13 +68,13 @@ export default function CSVUploader() {
           : payload.totalTransactions;
 
       const message = identifier
-        ? `Saved ${persistedTransactions} transactions to the database (id ${identifier}).`
-        : `Saved ${persistedTransactions} transactions to the database.`;
+        ? `Salvei ${persistedTransactions} transações no banco de dados (id ${identifier}).`
+        : `Salvei ${persistedTransactions} transações no banco de dados.`;
 
       setSuccessMessage(message);
     } catch (err) {
-      console.error('Failed to persist statement', err);
-      setError('Failed to save the statement to the database. Please try again.');
+      console.error('Falha ao salvar o extrato', err);
+      setError('Não foi possível salvar o extrato no banco de dados. Tente novamente.');
     } finally {
       setIsSaving(false);
     }
@@ -97,7 +97,7 @@ export default function CSVUploader() {
       const dataRows = rows.slice(1);
 
       if (!dataRows.length) {
-        setError('No data rows found in the provided CSV file.');
+        setError('Nenhuma linha de dados foi encontrada no arquivo CSV enviado.');
         return;
       }
 
@@ -105,7 +105,7 @@ export default function CSVUploader() {
       const payableTransactions = filterNonNegativeTransactions(transactions);
 
       if (!payableTransactions.length) {
-        setError('No data rows with a non-negative amount were found in the provided CSV file.');
+        setError('Nenhuma linha com valor não negativo foi encontrada no arquivo CSV enviado.');
         return;
       }
 
@@ -128,7 +128,7 @@ export default function CSVUploader() {
       setStatement(statementPayload);
       await persistStatement(statementPayload, file.name);
     } catch (err) {
-      setError('Failed to read the selected file. Please try again.');
+      setError('Não foi possível ler o arquivo selecionado. Tente novamente.');
       console.error(err);
     } finally {
       event.target.value = '';
@@ -145,15 +145,15 @@ export default function CSVUploader() {
         style={{ display: 'none' }}
       />
       <div style={styles.info}>
-        <h2 style={styles.title}>Upload CSV</h2>
+        <h2 style={styles.title}>Importar CSV</h2>
         <p style={styles.subtitle}>
-          Select a CSV file with up to five columns to preview it as JSON.
+          Selecione um arquivo CSV com até cinco colunas para visualizar uma prévia em JSON.
         </p>
         <button type="button" onClick={openFilePicker} style={styles.button}>
-          Choose file
+          Escolher arquivo
         </button>
-        {fileName && <p style={styles.fileName}>Selected: {fileName}</p>}
-        {isSaving && <p style={styles.status}>Saving statement to database...</p>}
+        {fileName && <p style={styles.fileName}>Selecionado: {fileName}</p>}
+        {isSaving && <p style={styles.status}>Salvando extrato no banco de dados...</p>}
         {successMessage && <p style={styles.success}>{successMessage}</p>}
         {error && <p style={styles.error}>{error}</p>}
       </div>
@@ -162,7 +162,7 @@ export default function CSVUploader() {
           <pre style={styles.output}>{JSON.stringify(statement, null, 2)}</pre>
         ) : (
           <div style={styles.placeholder}>
-            <p style={styles.placeholderText}>Upload a file to see its preview here.</p>
+            <p style={styles.placeholderText}>Envie um arquivo para ver a prévia aqui.</p>
           </div>
         )}
       </div>

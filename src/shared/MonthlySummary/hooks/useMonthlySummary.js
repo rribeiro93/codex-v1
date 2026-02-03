@@ -16,6 +16,50 @@ const initialState = {
   yearlyAverage: 0
 };
 
+const monthTranslations = {
+  january: 'Janeiro',
+  february: 'Fevereiro',
+  march: 'Março',
+  april: 'Abril',
+  may: 'Maio',
+  june: 'Junho',
+  july: 'Julho',
+  august: 'Agosto',
+  september: 'Setembro',
+  october: 'Outubro',
+  november: 'Novembro',
+  december: 'Dezembro'
+};
+
+function translateMonthLabel(label) {
+  if (typeof label !== 'string') {
+    return label;
+  }
+  const trimmed = label.trim();
+  const normalized = trimmed.toLowerCase();
+  const translated = monthTranslations[normalized];
+  if (!translated) {
+    return trimmed;
+  }
+  return translated.charAt(0).toUpperCase() + translated.slice(1);
+}
+
+function translateCompositeLabel(label) {
+  if (typeof label !== 'string') {
+    return label;
+  }
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const [firstWord, ...rest] = trimmed.split(' ');
+  const translatedFirst = translateMonthLabel(firstWord);
+  if (!rest.length) {
+    return translatedFirst;
+  }
+  return `${translatedFirst} ${rest.join(' ')}`;
+}
+
 const resolveSortValue = (item, columnKey) => {
   switch (columnKey) {
     case 'date': {
@@ -123,9 +167,9 @@ export function useMonthlySummary() {
             : responseYears[0] ?? '';
 
         const normalized = summary.map((item) => {
-          const month = typeof item.month === 'string' && item.month ? item.month : 'Unknown';
+          const month = typeof item.month === 'string' && item.month ? item.month : '';
           const monthName =
-            typeof item.monthName === 'string' && item.monthName ? item.monthName : 'Unknown';
+            typeof item.monthName === 'string' && item.monthName ? item.monthName : '';
           const totalAmount =
             typeof item.totalAmount === 'number' && Number.isFinite(item.totalAmount)
               ? item.totalAmount
@@ -141,7 +185,7 @@ export function useMonthlySummary() {
               : 0;
           const safeInstallments = installmentAmount > 0 ? installmentAmount : 0;
           const safeNonInstallments = nonInstallmentAmount > 0 ? nonInstallmentAmount : 0;
-          const displayMonth = monthName !== 'Unknown' ? monthName : month;
+          const displayMonth = monthName ? translateMonthLabel(monthName) : translateCompositeLabel(month);
 
           return {
             month,
@@ -175,7 +219,7 @@ export function useMonthlySummary() {
           yearlyAverage: averageTotal
         }));
       } catch (err) {
-        console.error('Failed to load monthly summary', err);
+    console.error('Não foi possível carregar o resumo mensal', err);
         setState((prev) => ({
           ...prev,
           data: [],
@@ -186,7 +230,7 @@ export function useMonthlySummary() {
           transactions: [],
           isLoading: false,
           isTransactionsLoading: false,
-          error: 'Unable to load monthly totals. Please try again.',
+          error: 'Não foi possível carregar os totais mensais. Tente novamente.',
           transactionsError: '',
           sortColumn: '',
           sortDirection: 'asc',
@@ -258,6 +302,12 @@ export function useMonthlySummary() {
           const statementId =
             typeof transaction.statementId === 'string' ? transaction.statementId : '';
           const fileName = typeof transaction.fileName === 'string' ? transaction.fileName : '';
+          const mappingId =
+            typeof transaction.mappingId === 'string' ? transaction.mappingId : '';
+          const mappingTransaction =
+            typeof transaction.mappingTransaction === 'string'
+              ? transaction.mappingTransaction
+              : '';
 
           const normalizedInstallments = (() => {
             if (!transaction.installments || typeof transaction.installments !== 'object') {
@@ -280,15 +330,18 @@ export function useMonthlySummary() {
             owner,
             amount,
             installments: normalizedInstallments,
-            fileName
+            fileName,
+            mappingId,
+            mappingTransaction
           };
         });
 
         const finalLabelBase = normalizedMonthName || displayLabel || targetMonth;
+        const localizedBase = translateCompositeLabel(finalLabelBase);
         const finalLabel =
-          selectedYear && finalLabelBase && !finalLabelBase.includes(selectedYear)
-            ? `${finalLabelBase} ${selectedYear}`
-            : finalLabelBase;
+          selectedYear && localizedBase && !localizedBase.includes(selectedYear)
+            ? `${localizedBase} ${selectedYear}`
+            : localizedBase;
 
         setState((prev) => ({
           ...prev,
@@ -301,12 +354,12 @@ export function useMonthlySummary() {
           sortDirection: 'asc'
         }));
       } catch (err) {
-        console.error('Failed to load transactions for month', err);
+        console.error('Não foi possível carregar as transações do mês selecionado', err);
         setState((prev) => ({
           ...prev,
           transactions: [],
           isTransactionsLoading: false,
-          transactionsError: 'Unable to load transactions. Please try again.',
+          transactionsError: 'Não foi possível carregar as transações. Tente novamente.',
           sortColumn: '',
           sortDirection: 'asc'
         }));
@@ -345,12 +398,14 @@ export function useMonthlySummary() {
         (typeof payload.monthName === 'string' && payload.monthName) ||
         monthValue;
 
-      const label =
+      const baseLabel =
         selectedYear && display && !display.includes(selectedYear)
           ? `${display} ${selectedYear}`
           : display;
 
-      loadTransactions(monthValue, label);
+      const localizedLabel = translateCompositeLabel(baseLabel);
+
+      loadTransactions(monthValue, localizedLabel);
     },
     [isTransactionsLoading, loadTransactions, selectedMonth, selectedYear]
   );
@@ -364,6 +419,34 @@ export function useMonthlySummary() {
     },
     [loadSummary, selectedYear]
   );
+
+  const handleTransactionMappingChange = useCallback((transactionId, updates = {}) => {
+    if (!transactionId) {
+      return;
+    }
+
+    setState((prev) => {
+      const mappedTransactions = prev.transactions.map((transaction) => {
+        if (transaction.id !== transactionId) {
+          return transaction;
+        }
+        return {
+          ...transaction,
+          ...(typeof updates.category === 'string' ? { category: updates.category } : null),
+          ...(typeof updates.cleanName === 'string' ? { cleanName: updates.cleanName } : null),
+          ...(typeof updates.mappingId === 'string' ? { mappingId: updates.mappingId } : null),
+          ...(typeof updates.mappingTransaction === 'string'
+            ? { mappingTransaction: updates.mappingTransaction }
+            : null)
+        };
+      });
+
+      return {
+        ...prev,
+        transactions: mappedTransactions
+      };
+    });
+  }, []);
 
   const sortedTransactions = useMemo(() => {
     if (!sortColumn) {
@@ -418,6 +501,45 @@ export function useMonthlySummary() {
     });
   }, []);
 
+  const installmentStats = useMemo(() => {
+    if (!transactions.length) {
+      return { count: 0, total: 0 };
+    }
+
+    return transactions.reduce(
+      (acc, transaction) => {
+        if (!transaction.installments || typeof transaction.installments !== 'object') {
+          return acc;
+        }
+
+        const current = Number(transaction.installments.current);
+        const total = Number(transaction.installments.total);
+        if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 1 || current <= 0) {
+          return acc;
+        }
+
+        const amount = Number(transaction.amount);
+        const numericAmount = Number.isFinite(amount) ? amount : 0;
+
+        return {
+          count: acc.count + 1,
+          total: acc.total + numericAmount
+        };
+      },
+      { count: 0, total: 0 }
+    );
+  }, [transactions]);
+
+  const transactionsTotalAmount = useMemo(() => {
+    if (!transactions.length) {
+      return 0;
+    }
+    return transactions.reduce((sum, transaction) => {
+      const amount = Number(transaction.amount);
+      return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+  }, [transactions]);
+
   return {
     data,
     years,
@@ -438,6 +560,9 @@ export function useMonthlySummary() {
     sortColumn,
     sortDirection,
     handleSort,
-    yearlyAverage
+    handleTransactionMappingChange,
+    yearlyAverage,
+    transactionsTotalAmount,
+    installmentStats
   };
 }

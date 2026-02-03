@@ -2,15 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 
 function formatTimestamp(value) {
   if (!value || typeof value !== 'string') {
-    return 'Not available';
+    return 'Não disponível';
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return 'Not available';
+    return 'Não disponível';
   }
 
-  return parsed.toLocaleString(undefined, {
+  return parsed.toLocaleString('pt-BR', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -52,7 +52,7 @@ function createCategoryViewModel(category) {
 
   return {
     id,
-    name: name || 'Unnamed category',
+    name: name || 'Categoria sem nome',
     category: code || 'UNDEFINED',
     createdAt,
     updatedAt,
@@ -87,7 +87,7 @@ export default function ManagePlaces() {
 
     const loadCategories = async () => {
       if (typeof fetch !== 'function') {
-        setError('Fetch API is not available in this environment.');
+        setError('A Fetch API não está disponível neste ambiente.');
         setIsLoading(false);
         return;
       }
@@ -112,9 +112,9 @@ export default function ManagePlaces() {
           setCategories(mapped);
         }
       } catch (fetchError) {
-        console.error('Failed to load categories', fetchError);
+        console.error('Não foi possível carregar as categorias', fetchError);
         if (isMounted) {
-          setError('Failed to load categories from the database. Please try again.');
+          setError('Não foi possível carregar as categorias do banco de dados. Tente novamente.');
         }
       } finally {
         if (isMounted) {
@@ -137,7 +137,7 @@ export default function ManagePlaces() {
 
     const trimmedName = typeof newCategoryName === 'string' ? newCategoryName.trim() : '';
     if (!trimmedName) {
-      setError('Please enter a category name before adding.');
+      setError('Informe um nome de categoria antes de adicionar.');
       return;
     }
 
@@ -161,15 +161,15 @@ export default function ManagePlaces() {
       const body = await response.json();
       const created = createCategoryViewModel(body?.category);
       if (!created) {
-        throw new Error('Invalid category payload returned by the server.');
+        throw new Error('Resposta inválida de categoria retornada pelo servidor.');
       }
 
       setCategories((previous) => sortCategories([...(previous || []), created]));
       setNewCategoryName('');
-      setMessage(`Added category "${created.name}" (${created.category}).`);
+      setMessage(`Categoria "${created.name}" (${created.category}) adicionada.`);
     } catch (createError) {
-      console.error('Failed to create category', createError);
-      setError('Failed to add the category. Please try again.');
+      console.error('Não foi possível criar a categoria', createError);
+      setError('Não foi possível adicionar a categoria. Tente novamente.');
     } finally {
       setIsCreating(false);
     }
@@ -194,7 +194,7 @@ export default function ManagePlaces() {
 
     const trimmedName = typeof editingName === 'string' ? editingName.trim() : '';
     if (!trimmedName) {
-      setError('Please enter a category name before saving.');
+      setError('Informe um nome de categoria antes de salvar.');
       return;
     }
 
@@ -218,7 +218,7 @@ export default function ManagePlaces() {
       const body = await response.json();
       const updated = createCategoryViewModel(body?.category);
       if (!updated) {
-        throw new Error('Invalid category payload returned by the server.');
+        throw new Error('Resposta inválida de categoria retornada pelo servidor.');
       }
 
       setCategories((previous) =>
@@ -226,10 +226,10 @@ export default function ManagePlaces() {
       );
       setEditingCategoryId('');
       setEditingName('');
-      setMessage(`Updated category to "${updated.name}" (${updated.category}).`);
+      setMessage(`Categoria atualizada para "${updated.name}" (${updated.category}).`);
     } catch (updateError) {
-      console.error('Failed to update category', updateError);
-      setError('Failed to update the category. Please try again.');
+      console.error('Não foi possível atualizar a categoria', updateError);
+      setError('Não foi possível atualizar a categoria. Tente novamente.');
     } finally {
       setIsUpdating(false);
     }
@@ -249,7 +249,7 @@ export default function ManagePlaces() {
       return;
     }
 
-    const confirmMessage = `Delete category "${targetCategory.name}" (${targetCategory.category})? This cannot be undone.`;
+    const confirmMessage = `Excluir a categoria "${targetCategory.name}" (${targetCategory.category})? Essa ação não pode ser desfeita.`;
     if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
       const shouldProceed = window.confirm(confirmMessage);
       if (!shouldProceed) {
@@ -274,7 +274,7 @@ export default function ManagePlaces() {
           setEditingName('');
         }
         setMessage(
-          `Category "${targetCategory.name}" (${targetCategory.category}) was already removed.`
+          `A categoria "${targetCategory.name}" (${targetCategory.category}) já havia sido removida.`
         );
         return;
       }
@@ -288,10 +288,10 @@ export default function ManagePlaces() {
         setEditingCategoryId('');
         setEditingName('');
       }
-      setMessage(`Removed category "${targetCategory.name}" (${targetCategory.category}).`);
+      setMessage(`Categoria "${targetCategory.name}" (${targetCategory.category}) removida.`);
     } catch (deleteError) {
-      console.error('Failed to delete category', deleteError);
-      setError('Failed to delete the category. Please try again.');
+      console.error('Não foi possível excluir a categoria', deleteError);
+      setError('Não foi possível excluir a categoria. Tente novamente.');
     } finally {
       deletingIdsRef.current.delete(categoryId);
       setDeletingCategoryId('');
@@ -302,22 +302,22 @@ export default function ManagePlaces() {
     <section style={styles.wrapper}>
       <header style={styles.header}>
         <div>
-          <h2 style={styles.title}>Manage Categories</h2>
-          <p style={styles.subtitle}>Create, list, and edit the categories available.</p>
+          <h2 style={styles.title}>Gerenciar Categorias</h2>
+          <p style={styles.subtitle}>Crie, liste e edite as categorias disponíveis.</p>
         </div>
       </header>
 
-      <div style={styles.card} aria-label="Create category">
-        <h3 style={styles.cardTitle}>Add a category</h3>
+      <div style={styles.card} aria-label="Criar categoria">
+        <h3 style={styles.cardTitle}>Adicionar categoria</h3>
         <p style={styles.cardHint}>
-          Names are converted into uppercase enum identifiers without spaces or special characters.
+          Os nomes são convertidos em identificadores em maiúsculas, sem espaços ou caracteres especiais.
         </p>
         <div style={styles.formRow}>
           <input
             type="text"
             value={newCategoryName}
             onChange={(event) => setNewCategoryName(event.target.value)}
-            placeholder="Enter a category name"
+            placeholder="Digite o nome da categoria"
             style={styles.input}
             disabled={isCreating}
           />
@@ -330,20 +330,20 @@ export default function ManagePlaces() {
             }}
             disabled={!newCategoryName.trim() || isCreating}
           >
-            {isCreating ? 'Adding...' : 'Add category'}
+            {isCreating ? 'Adicionando...' : 'Adicionar categoria'}
           </button>
         </div>
       </div>
 
-      {isLoading && <p style={styles.message}>Loading categories...</p>}
+      {isLoading && <p style={styles.message}>Carregando categorias...</p>}
       {!isLoading && error && <p style={styles.error}>{error}</p>}
       {!isLoading && message && <p style={styles.success}>{message}</p>}
       {!isLoading && !error && !categories.length && (
-        <p style={styles.message}>No categories yet. Use the form above to create one.</p>
+        <p style={styles.message}>Ainda não há categorias. Use o formulário acima para criar uma.</p>
       )}
 
       {!isLoading && !error && categories.length > 0 && (
-        <div style={styles.list} role="grid" aria-label="Categories list">
+        <div style={styles.list} role="grid" aria-label="Lista de categorias">
           {categories.map((category) => {
             const isEditing = category.id === editingCategoryId;
             return (
@@ -352,7 +352,7 @@ export default function ManagePlaces() {
                   <p style={styles.categoryName}>{category.name}</p>
                   <p style={styles.categoryCode}>Enum: {category.category}</p>
                   <p style={styles.categoryMeta}>
-                    Updated: {category.updatedAtLabel} • Created: {category.createdAtLabel}
+                    Atualizado: {category.updatedAtLabel} • Criado: {category.createdAtLabel}
                   </p>
                 </div>
                 <div style={styles.actionCell} role="gridcell">
@@ -363,7 +363,7 @@ export default function ManagePlaces() {
                         value={editingName}
                         onChange={(event) => setEditingName(event.target.value)}
                         style={styles.input}
-                        placeholder="Enter a category name"
+                        placeholder="Digite o nome da categoria"
                         disabled={isUpdating}
                       />
                       <button
@@ -375,7 +375,7 @@ export default function ManagePlaces() {
                         }}
                         disabled={!editingName.trim() || isUpdating}
                       >
-                        {isUpdating ? 'Saving...' : 'Save'}
+                        {isUpdating ? 'Salvando...' : 'Salvar'}
                       </button>
                       <button
                         type="button"
@@ -383,7 +383,7 @@ export default function ManagePlaces() {
                         style={styles.secondaryButton}
                         disabled={isUpdating}
                       >
-                        Cancel
+                        Cancelar
                       </button>
                     </div>
                   ) : (
@@ -394,7 +394,7 @@ export default function ManagePlaces() {
                         onClick={() => handleStartEdit(category)}
                         disabled={deletingCategoryId === category.id}
                       >
-                        Edit
+                        Editar
                       </button>
                       <button
                         type="button"
@@ -405,7 +405,7 @@ export default function ManagePlaces() {
                         onClick={() => handleDeleteCategory(category.id)}
                         disabled={deletingCategoryId === category.id}
                       >
-                        {deletingCategoryId === category.id ? 'Deleting...' : 'Delete'}
+                        {deletingCategoryId === category.id ? 'Excluindo...' : 'Excluir'}
                       </button>
                     </div>
                   )}

@@ -6,12 +6,16 @@ import { useMonthlySummary } from './hooks/useMonthlySummary';
 
 const styles = {
   wrapper: {
-    width: 'min(960px, 100%)',
+    width: '100%',
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
     gap: '1.5rem',
-    textAlign: 'left'
+    textAlign: 'left',
+    alignItems: 'center'
+  },
+  section: {
+    width: 'min(1200px, 100%)'
   },
   error: {
     margin: 0,
@@ -43,29 +47,42 @@ export default function MonthlySummary() {
     sortColumn,
     sortDirection,
     handleSort,
-    yearlyAverage
+    handleTransactionMappingChange,
+    yearlyAverage,
+    transactionsTotalAmount,
+    installmentStats
   } = useMonthlySummary();
 
   const transactionsLabel = selectedMonthLabel || selectedMonth || '';
 
   return (
     <section style={styles.wrapper}>
-      <YearPagination
-        years={years}
-        selectedYear={selectedYear}
-        isLoading={isLoading}
-        onSelect={handleYearClick}
-      />
-      {error && <p style={styles.error}>{error}</p>}
+      <div style={styles.section}>
+        <YearPagination
+          years={years}
+          selectedYear={selectedYear}
+          isLoading={isLoading}
+          onSelect={handleYearClick}
+        />
+      </div>
+      {error && (
+        <div style={styles.section}>
+          <p style={styles.error}>{error}</p>
+        </div>
+      )}
       {!error && !hasYears && !isLoading && (
-        <p style={styles.emptyMessage}>
-          No statement years found yet. Upload CSV files to populate this chart.
-        </p>
+        <div style={styles.section}>
+          <p style={styles.emptyMessage}>
+            Ainda não há anos de extrato disponíveis. Importe arquivos CSV para popular este gráfico.
+          </p>
+        </div>
       )}
       {!error && hasYears && !hasData && !isLoading && (
-        <p style={styles.emptyMessage}>
-          No statements found for {selectedYear}. Upload CSV files to populate this chart.
-        </p>
+        <div style={styles.section}>
+          <p style={styles.emptyMessage}>
+            Não encontramos extratos para {selectedYear}. Importe arquivos CSV para popular este gráfico.
+          </p>
+        </div>
       )}
       <SummaryChart
         data={data}
@@ -83,6 +100,9 @@ export default function MonthlySummary() {
         sortColumn={sortColumn}
         sortDirection={sortDirection}
         onSort={handleSort}
+        onTransactionMappingChange={handleTransactionMappingChange}
+        totalAmount={transactionsTotalAmount}
+        installmentStats={installmentStats}
       />
     </section>
   );
