@@ -6,6 +6,7 @@ const { paths, MONGODB_URI, MONGODB_DB_NAME } = require('./config');
 const { connectToDatabase, getDatabase } = require('./database');
 const statementsRouter = require('./routes/statements');
 const placesRouter = require('./routes/places');
+const categoriesRouter = require('./routes/categories');
 
 // App component must be required after Babel registration.
 const App = require('../src/shared/App').default;
@@ -26,6 +27,7 @@ async function createServerApp() {
 
   app.use('/api/statements', statementsRouter);
   app.use('/api/places', placesRouter);
+  app.use('/api/categories', categoriesRouter);
 
   app.get('*', (req, res) => {
     const html = renderReactApp(req.url);

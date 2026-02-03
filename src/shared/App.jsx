@@ -6,7 +6,7 @@ import ManagePlaces from './ManagePlaces';
 const menuItems = [
   { id: 'upload', label: 'Upload' },
   { id: 'summary', label: 'Summary' },
-  { id: 'places', label: 'Places' }
+  { id: 'categories', label: 'Categories' }
 ];
 
 export default function App() {
@@ -17,7 +17,7 @@ export default function App() {
     if (activePage === 'summary') {
       return <MonthlySummary />;
     }
-    if (activePage === 'places') {
+    if (activePage === 'categories') {
       return <ManagePlaces />;
     }
     return <CSVUploader />;

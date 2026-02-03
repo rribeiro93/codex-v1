@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-function formatUpdatedAt(value) {
+function formatTimestamp(value) {
   if (!value || typeof value !== 'string') {
-    return 'Not updated yet';
+    return 'Not available';
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return 'Not updated yet';
+    return 'Not available';
   }
 
   return parsed.toLocaleString(undefined, {
@@ -19,51 +19,73 @@ function formatUpdatedAt(value) {
   });
 }
 
-function createPlaceViewModel(place) {
-  if (!place || typeof place !== 'object') {
+function createCategoryViewModel(category) {
+  if (!category || typeof category !== 'object') {
     return null;
   }
 
-  const id = typeof place.id === 'string' ? place.id : '';
+  const id =
+    typeof category.id === 'string'
+      ? category.id
+      : typeof category._id === 'string'
+        ? category._id
+        : '';
+
   if (!id) {
     return null;
   }
 
-  const cleanName = typeof place.cleanName === 'string' ? place.cleanName.trim() : '';
-  const transaction = typeof place.transaction === 'string' ? place.transaction.trim() : '';
-  const category = typeof place.category === 'string' ? place.category : '';
-
+  const name = typeof category.name === 'string' ? category.name.trim() : '';
+  const code = typeof category.category === 'string' ? category.category.trim() : '';
+  const createdAt =
+    typeof category.createdAt === 'string' && category.createdAt
+      ? category.createdAt
+      : typeof category.createdAt === 'number'
+        ? new Date(category.createdAt).toISOString()
+        : '';
   const updatedAt =
-    typeof place.updatedAt === 'string' && place.updatedAt
-      ? place.updatedAt
-      : typeof place.updatedAt === 'number'
-        ? new Date(place.updatedAt).toISOString()
+    typeof category.updatedAt === 'string' && category.updatedAt
+      ? category.updatedAt
+      : typeof category.updatedAt === 'number'
+        ? new Date(category.updatedAt).toISOString()
         : '';
 
   return {
     id,
-    cleanName,
-    transaction,
-    displayName: cleanName || transaction || 'Unknown place',
-    category,
-    originalCategory: category,
-    status: typeof place.status === 'string' ? place.status.trim() : '',
+    name: name || 'Unnamed category',
+    category: code || 'UNDEFINED',
+    createdAt,
     updatedAt,
-    updatedAtLabel: formatUpdatedAt(updatedAt)
+    createdAtLabel: formatTimestamp(createdAt),
+    updatedAtLabel: formatTimestamp(updatedAt)
   };
 }
 
+function sortCategories(list) {
+  return [...list].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, {
+      sensitivity: 'base'
+    })
+  );
+}
+
 export default function ManagePlaces() {
-  const [places, setPlaces] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
-  const [saveMessage, setSaveMessage] = useState('');
+  const [message, setMessage] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState('');
+  const [editingName, setEditingName] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingCategoryId, setDeletingCategoryId] = useState('');
+  const deletingIdsRef = useRef(new Set());
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadPlaces = async () => {
+    const loadCategories = async () => {
       if (typeof fetch !== 'function') {
         setError('Fetch API is not available in this environment.');
         setIsLoading(false);
@@ -72,26 +94,27 @@ export default function ManagePlaces() {
 
       setIsLoading(true);
       setError('');
+      setMessage('');
 
       try {
-        const response = await fetch('/api/places');
+        const response = await fetch('/api/categories');
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
         }
 
         const body = await response.json();
-        const receivedPlaces = Array.isArray(body?.places) ? body.places : [];
-        const mapped = receivedPlaces
-          .map(createPlaceViewModel)
-          .filter(Boolean);
+        const receivedCategories = Array.isArray(body?.categories) ? body.categories : [];
+        const mapped = sortCategories(
+          receivedCategories.map(createCategoryViewModel).filter(Boolean)
+        );
 
         if (isMounted) {
-          setPlaces(mapped);
+          setCategories(mapped);
         }
       } catch (fetchError) {
-        console.error('Failed to load places list', fetchError);
+        console.error('Failed to load categories', fetchError);
         if (isMounted) {
-          setError('Failed to load places from the database. Please try again.');
+          setError('Failed to load categories from the database. Please try again.');
         }
       } finally {
         if (isMounted) {
@@ -100,70 +123,35 @@ export default function ManagePlaces() {
       }
     };
 
-    loadPlaces();
+    loadCategories();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const pendingUpdates = useMemo(
-    () =>
-      places
-        .map((place) => {
-          const current = typeof place.category === 'string' ? place.category.trim() : '';
-          const original =
-            typeof place.originalCategory === 'string' ? place.originalCategory.trim() : '';
-
-          if (current === original) {
-            return null;
-          }
-
-          return {
-            id: place.id,
-            category: typeof place.category === 'string' ? place.category.trim() : ''
-          };
-        })
-        .filter(Boolean),
-    [places]
-  );
-
-  const hasChanges = pendingUpdates.length > 0;
-
-  const handleCategoryChange = (placeId, value) => {
-    setSaveMessage('');
-    setPlaces((previousPlaces) =>
-      previousPlaces.map((place) => {
-        if (place.id !== placeId) {
-          return place;
-        }
-
-        return {
-          ...place,
-          category: value
-        };
-      })
-    );
-  };
-
-  const handleSave = async () => {
-    if (!hasChanges || typeof fetch !== 'function') {
+  const handleCreateCategory = async () => {
+    if (isCreating || typeof fetch !== 'function') {
       return;
     }
 
-    const updates = pendingUpdates;
+    const trimmedName = typeof newCategoryName === 'string' ? newCategoryName.trim() : '';
+    if (!trimmedName) {
+      setError('Please enter a category name before adding.');
+      return;
+    }
 
-    setIsSaving(true);
+    setIsCreating(true);
     setError('');
-    setSaveMessage('');
+    setMessage('');
 
     try {
-      const response = await fetch('/api/places/categories', {
-        method: 'PUT',
+      const response = await fetch('/api/categories', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ updates })
+        body: JSON.stringify({ name: trimmedName })
       });
 
       if (!response.ok) {
@@ -171,39 +159,142 @@ export default function ManagePlaces() {
       }
 
       const body = await response.json();
-      const updatedCount = Number.isFinite(body?.updatedCount) ? body.updatedCount : 0;
-      const matchedCount = Number.isFinite(body?.matchedCount) ? body.matchedCount : 0;
+      const created = createCategoryViewModel(body?.category);
+      if (!created) {
+        throw new Error('Invalid category payload returned by the server.');
+      }
 
-      const updatedAtIso = new Date().toISOString();
-
-      setPlaces((previousPlaces) =>
-        previousPlaces.map((place) => {
-          const update = updates.find((item) => item.id === place.id);
-          if (!update) {
-            return place;
-          }
-          const trimmedCategory =
-            typeof update.category === 'string' ? update.category.trim() : '';
-          const nextStatus = trimmedCategory ? 'labeled' : 'pending';
-          return {
-            ...place,
-            category: trimmedCategory,
-            originalCategory: trimmedCategory,
-            status: nextStatus,
-            updatedAt: updatedAtIso,
-            updatedAtLabel: formatUpdatedAt(updatedAtIso)
-          };
-        })
-      );
-
-      setSaveMessage(
-        `Saved changes for ${updatedCount} place${updatedCount === 1 ? '' : 's'} (matched ${matchedCount}).`
-      );
-    } catch (saveError) {
-      console.error('Failed to update place categories', saveError);
-      setError('Failed to save the updated categories. Please try again.');
+      setCategories((previous) => sortCategories([...(previous || []), created]));
+      setNewCategoryName('');
+      setMessage(`Added category "${created.name}" (${created.category}).`);
+    } catch (createError) {
+      console.error('Failed to create category', createError);
+      setError('Failed to add the category. Please try again.');
     } finally {
-      setIsSaving(false);
+      setIsCreating(false);
+    }
+  };
+
+  const handleStartEdit = (category) => {
+    setEditingCategoryId(category.id);
+    setEditingName(category.name);
+    setMessage('');
+    setError('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategoryId('');
+    setEditingName('');
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategoryId || isUpdating || typeof fetch !== 'function') {
+      return;
+    }
+
+    const trimmedName = typeof editingName === 'string' ? editingName.trim() : '';
+    if (!trimmedName) {
+      setError('Please enter a category name before saving.');
+      return;
+    }
+
+    setIsUpdating(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/categories/${editingCategoryId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: trimmedName })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const body = await response.json();
+      const updated = createCategoryViewModel(body?.category);
+      if (!updated) {
+        throw new Error('Invalid category payload returned by the server.');
+      }
+
+      setCategories((previous) =>
+        sortCategories(previous.map((item) => (item.id === updated.id ? updated : item)))
+      );
+      setEditingCategoryId('');
+      setEditingName('');
+      setMessage(`Updated category to "${updated.name}" (${updated.category}).`);
+    } catch (updateError) {
+      console.error('Failed to update category', updateError);
+      setError('Failed to update the category. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!categoryId || typeof fetch !== 'function') {
+      return;
+    }
+
+    if (deletingIdsRef.current.has(categoryId)) {
+      return;
+    }
+
+    const targetCategory = categories.find((category) => category.id === categoryId);
+    if (!targetCategory) {
+      return;
+    }
+
+    const confirmMessage = `Delete category "${targetCategory.name}" (${targetCategory.category})? This cannot be undone.`;
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const shouldProceed = window.confirm(confirmMessage);
+      if (!shouldProceed) {
+        return;
+      }
+    }
+
+    deletingIdsRef.current.add(categoryId);
+    setDeletingCategoryId(categoryId);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.status === 404) {
+        setCategories((previous) => previous.filter((category) => category.id !== categoryId));
+        if (editingCategoryId === categoryId) {
+          setEditingCategoryId('');
+          setEditingName('');
+        }
+        setMessage(
+          `Category "${targetCategory.name}" (${targetCategory.category}) was already removed.`
+        );
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      setCategories((previous) => previous.filter((category) => category.id !== categoryId));
+      if (editingCategoryId === categoryId) {
+        setEditingCategoryId('');
+        setEditingName('');
+      }
+      setMessage(`Removed category "${targetCategory.name}" (${targetCategory.category}).`);
+    } catch (deleteError) {
+      console.error('Failed to delete category', deleteError);
+      setError('Failed to delete the category. Please try again.');
+    } finally {
+      deletingIdsRef.current.delete(categoryId);
+      setDeletingCategoryId('');
     }
   };
 
@@ -211,51 +302,117 @@ export default function ManagePlaces() {
     <section style={styles.wrapper}>
       <header style={styles.header}>
         <div>
-          <h2 style={styles.title}>Manage Places</h2>
+          <h2 style={styles.title}>Manage Categories</h2>
+          <p style={styles.subtitle}>Create, list, and edit the categories available.</p>
         </div>
-        <button
-          type="button"
-          style={{
-            ...styles.saveButton,
-            ...(hasChanges && !isSaving ? styles.saveButtonActive : {}),
-            ...(isSaving ? styles.saveButtonDisabled : {})
-          }}
-          onClick={handleSave}
-          disabled={!hasChanges || isSaving}
-        >
-          {isSaving ? 'Saving...' : 'Save changes'}
-        </button>
       </header>
 
-      {isLoading && <p style={styles.message}>Loading places...</p>}
-      {!isLoading && error && <p style={styles.error}>{error}</p>}
-      {!isLoading && !error && !places.length && (
-        <p style={styles.message}>No places found yet. Upload statements to extract places.</p>
-      )}
-      {!isLoading && saveMessage && <p style={styles.success}>{saveMessage}</p>}
+      <div style={styles.card} aria-label="Create category">
+        <h3 style={styles.cardTitle}>Add a category</h3>
+        <p style={styles.cardHint}>
+          Names are converted into uppercase enum identifiers without spaces or special characters.
+        </p>
+        <div style={styles.formRow}>
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(event) => setNewCategoryName(event.target.value)}
+            placeholder="Enter a category name"
+            style={styles.input}
+            disabled={isCreating}
+          />
+          <button
+            type="button"
+            onClick={handleCreateCategory}
+            style={{
+              ...styles.primaryButton,
+              ...(isCreating ? styles.buttonDisabled : {})
+            }}
+            disabled={!newCategoryName.trim() || isCreating}
+          >
+            {isCreating ? 'Adding...' : 'Add category'}
+          </button>
+        </div>
+      </div>
 
-      {!isLoading && !error && places.length > 0 && (
-        <div style={styles.list} role="grid" aria-label="Places categories">
-          {places.map((place) => (
-            <div key={place.id} style={styles.row} role="row">
-              <div style={styles.placeInfo} role="gridcell">
-                <p style={styles.placeName}>{place.displayName}</p>
-                {place.transaction && place.transaction !== place.displayName && (
-                  <p style={styles.placeSource}>Transaction: {place.transaction}</p>
-                )}
-                <p style={styles.placeMeta}>Updated: {place.updatedAtLabel}</p>
+      {isLoading && <p style={styles.message}>Loading categories...</p>}
+      {!isLoading && error && <p style={styles.error}>{error}</p>}
+      {!isLoading && message && <p style={styles.success}>{message}</p>}
+      {!isLoading && !error && !categories.length && (
+        <p style={styles.message}>No categories yet. Use the form above to create one.</p>
+      )}
+
+      {!isLoading && !error && categories.length > 0 && (
+        <div style={styles.list} role="grid" aria-label="Categories list">
+          {categories.map((category) => {
+            const isEditing = category.id === editingCategoryId;
+            return (
+              <div key={category.id} style={styles.row} role="row">
+                <div style={styles.categoryInfo} role="gridcell">
+                  <p style={styles.categoryName}>{category.name}</p>
+                  <p style={styles.categoryCode}>Enum: {category.category}</p>
+                  <p style={styles.categoryMeta}>
+                    Updated: {category.updatedAtLabel} • Created: {category.createdAtLabel}
+                  </p>
+                </div>
+                <div style={styles.actionCell} role="gridcell">
+                  {isEditing ? (
+                    <div style={styles.editRow}>
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(event) => setEditingName(event.target.value)}
+                        style={styles.input}
+                        placeholder="Enter a category name"
+                        disabled={isUpdating}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleUpdateCategory}
+                        style={{
+                          ...styles.primaryButton,
+                          ...(isUpdating ? styles.buttonDisabled : {})
+                        }}
+                        disabled={!editingName.trim() || isUpdating}
+                      >
+                        {isUpdating ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        style={styles.secondaryButton}
+                        disabled={isUpdating}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={styles.buttonGroup}>
+                      <button
+                        type="button"
+                        style={styles.secondaryButton}
+                        onClick={() => handleStartEdit(category)}
+                        disabled={deletingCategoryId === category.id}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.dangerButton,
+                          ...(deletingCategoryId === category.id ? styles.buttonDisabled : {})
+                        }}
+                        onClick={() => handleDeleteCategory(category.id)}
+                        disabled={deletingCategoryId === category.id}
+                      >
+                        {deletingCategoryId === category.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={styles.inputWrapper} role="gridcell">
-                <input
-                  type="text"
-                  value={place.category}
-                  onChange={(event) => handleCategoryChange(place.id, event.target.value)}
-                  placeholder="Enter a category"
-                  style={styles.input}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
@@ -268,7 +425,7 @@ const styles = {
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
-    gap: '1rem'
+    gap: '1.25rem'
   },
   header: {
     display: 'flex',
@@ -284,27 +441,76 @@ const styles = {
     margin: 0,
     fontSize: '1.75rem'
   },
-  saveButton: {
+  subtitle: {
+    margin: '0.5rem 0 0',
+    color: '#cbd5f5'
+  },
+  card: {
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    borderRadius: '1rem',
+    border: '1px solid rgba(148, 163, 184, 0.2)',
+    padding: '1.5rem 2rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem'
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: '1.25rem'
+  },
+  cardHint: {
+    margin: 0,
+    color: '#94a3b8',
+    fontSize: '0.9rem'
+  },
+  formRow: {
+    display: 'flex',
+    gap: '1rem',
+    flexWrap: 'wrap'
+  },
+  input: {
+    flex: '1 1 260px',
+    minWidth: '220px',
+    padding: '0.65rem 1rem',
+    borderRadius: '0.75rem',
+    border: '1px solid rgba(148, 163, 184, 0.3)',
+    backgroundColor: 'rgba(2, 6, 23, 0.6)',
+    color: '#f1f5f9',
+    fontSize: '0.95rem'
+  },
+  primaryButton: {
     padding: '0.75rem 1.75rem',
+    borderRadius: '9999px',
+    border: '1px solid rgba(56, 189, 248, 0.8)',
+    backgroundColor: '#38bdf8',
+    color: '#0f172a',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease'
+  },
+  secondaryButton: {
+    padding: '0.65rem 1.25rem',
     borderRadius: '9999px',
     border: '1px solid rgba(148, 163, 184, 0.4)',
     backgroundColor: 'rgba(148, 163, 184, 0.1)',
     color: '#e2e8f0',
-    fontWeight: 600,
-    cursor: 'not-allowed',
+    fontWeight: 500,
+    cursor: 'pointer',
     transition: 'background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease'
   },
-  saveButtonActive: {
-    backgroundColor: '#38bdf8',
-    borderColor: '#38bdf8',
-    color: '#0f172a',
+  dangerButton: {
+    padding: '0.65rem 1.25rem',
+    borderRadius: '9999px',
+    border: '1px solid rgba(248, 113, 113, 0.5)',
+    backgroundColor: 'rgba(248, 113, 113, 0.2)',
+    color: '#fecaca',
+    fontWeight: 600,
     cursor: 'pointer',
-    boxShadow: '0 12px 24px rgba(56, 189, 248, 0.25)',
-    transform: 'translateY(-1px)'
+    transition: 'background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease'
   },
-  saveButtonDisabled: {
-    opacity: 0.7,
-    cursor: 'wait'
+  buttonDisabled: {
+    opacity: 0.6,
+    cursor: 'not-allowed'
   },
   message: {
     margin: '0 0 0 0.5rem',
@@ -321,8 +527,8 @@ const styles = {
   list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '.2rem',
-    maxHeight: '80vh',
+    gap: '.4rem',
+    maxHeight: '70vh',
     overflowY: 'auto',
     paddingRight: '0.5rem'
   },
@@ -333,42 +539,46 @@ const styles = {
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
     border: '1px solid rgba(148, 163, 184, 0.2)',
     padding: '1rem 1.5rem',
-    justifyContent: 'center'
+    justifyContent: 'space-between',
+    flexWrap: 'wrap'
   },
-  placeInfo: {
-    flex: '1 1 360px',
+  categoryInfo: {
+    flex: '2 1 360px',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.35rem'
   },
-  placeName: {
+  categoryName: {
     margin: 0,
     fontWeight: 600,
     fontSize: '1rem',
     color: '#f8fafc'
   },
-  placeSource: {
+  categoryCode: {
     margin: 0,
     color: '#94a3b8',
     fontSize: '0.85rem'
   },
-  placeMeta: {
+  categoryMeta: {
     margin: 0,
     color: '#cbd5f5',
     fontSize: '0.8rem'
   },
-  inputWrapper: {
-    flex: '1 1 220px',
+  actionCell: {
+    flex: '1 1 240px',
     display: 'flex',
-    alignItems: 'center'
+    justifyContent: 'flex-end'
   },
-  input: {
-    width: '100%',
-    padding: '0.65rem 1rem',
-    borderRadius: '0.75rem',
-    border: '1px solid rgba(148, 163, 184, 0.3)',
-    backgroundColor: 'rgba(2, 6, 23, 0.6)',
-    color: '#f1f5f9',
-    fontSize: '0.95rem'
+  editRow: {
+    display: 'flex',
+    flex: '1 1 auto',
+    gap: '0.75rem',
+    flexWrap: 'wrap'
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '0.75rem',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end'
   }
 };
