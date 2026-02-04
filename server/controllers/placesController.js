@@ -182,13 +182,18 @@ async function handleUpdateSinglePlaceCategory(req, res) {
   }
 
   if (upsert) {
-    updatePayload.$setOnInsert = {
-      cleanName: cleanNameValue || '',
+    const setOnInsertPayload = {
       transaction: transactionValue,
       text: '',
       sourcePlace: transactionValue,
       createdAt: now
     };
+
+    if (typeof rawCleanNameValue === 'undefined') {
+      setOnInsertPayload.cleanName = '';
+    }
+
+    updatePayload.$setOnInsert = setOnInsertPayload;
   }
 
   try {

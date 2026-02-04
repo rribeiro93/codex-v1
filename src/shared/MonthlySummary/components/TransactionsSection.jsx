@@ -104,8 +104,7 @@ const styles = {
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
-    tableLayout: 'fixed'
+    borderCollapse: 'collapse'
   },
   tableHeader: {
     padding: '0.75rem 1rem',
@@ -188,8 +187,7 @@ const styles = {
     fontVariantNumeric: 'tabular-nums'
   },
   actionsCell: {
-    width: '220px',
-    verticalAlign: 'top'
+    width: '220px'
   },
   mappingEditor: {
     display: 'flex',
@@ -206,10 +204,10 @@ const styles = {
   categoryEditorActions: {
     display: 'flex',
     gap: '0.5rem',
-    flexWrap: 'wrap'
+    flexWrap: 'wrap',
+    justifyContent: 'center'
   },
   textInput: {
-    width: '100%',
     padding: '0.4rem 0.6rem',
     borderRadius: '0.5rem',
     border: '1px solid rgba(148, 163, 184, 0.3)',
@@ -306,7 +304,7 @@ const columns = [
   { key: 'date', label: 'Data', isNumeric: false },
   { key: 'place', label: 'Estabelecimento', isNumeric: false },
   { key: 'category', label: 'Categoria', isNumeric: false },
-  { key: 'owner', label: 'Responsável', isNumeric: false },
+  // { key: 'owner', label: 'Responsável', isNumeric: false },
   { key: 'installments', label: 'Parcelas', isNumeric: false },
   { key: 'amount', label: 'Valor', isNumeric: true }
 ];
@@ -532,7 +530,7 @@ export default function TransactionsSection({
       const categoryValue =
         typeof transaction.category === 'string' && transaction.category.trim()
           ? transaction.category.trim()
-          : 'Uncategorized';
+          : 'Não categorizado';
       const label =
         categoryValue && categoryValueToLabel.has(categoryValue)
           ? categoryValueToLabel.get(categoryValue)
@@ -725,7 +723,7 @@ export default function TransactionsSection({
                     </button>
                   </th>
                 ))}
-                <th style={styles.tableHeader}>Ações</th>
+                <th style={styles.tableHeader}></th>
               </tr>
             </thead>
             <tbody>
@@ -742,7 +740,7 @@ export default function TransactionsSection({
                   categoryValue && categoryValueToLabel.has(categoryValue)
                     ? categoryValueToLabel.get(categoryValue)
                     : '';
-                const categoryDisplay = categoryLabel || categoryValue || 'Não disponível';
+                const categoryDisplay = categoryLabel || categoryValue || 'Não categorizado';
 
                 return (
                   <tr
@@ -762,14 +760,14 @@ export default function TransactionsSection({
                       </div>
                     </td>
                     <td style={styles.tableCell}>{categoryDisplay}</td>
-                    <td style={styles.tableCell}>{transaction.owner || 'Não disponível'}</td>
+                    {/* <td style={styles.tableCell}>{transaction.owner || 'Não disponível'}</td> */}
                     <td style={styles.tableCell}>{formatInstallments(transaction.installments)}</td>
                     <td style={styles.tableCell}>{formatCurrency(transaction.amount)}</td>
                     <td style={{ ...styles.tableCell, ...styles.actionsCell }}>
                       {editingTransactionId === transaction.id ? (
                         <div style={styles.mappingEditor}>
                           <label style={styles.mappingLabel} htmlFor={`clean-name-${transaction.id}`}>
-                            Nome amigável
+                            Nome
                           <input
                               id={`clean-name-${transaction.id}`}
                               type="text"
@@ -792,7 +790,7 @@ export default function TransactionsSection({
                               <option value="">Sem categoria</option>
                               {categoryOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
-                                  {`${option.label} (${option.value})`}
+                                  {`${option.label}`}
                                 </option>
                               ))}
                             </select>

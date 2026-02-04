@@ -29,9 +29,11 @@ export default function YearPagination({ years, selectedYear, isLoading, onSelec
     return null;
   }
 
+  const orderedYears = [...years].sort((a, b) => a.localeCompare(b));
+
   return (
     <nav style={styles.pagination} aria-label="Anos">
-      {years.map((yearOption) => {
+      {orderedYears.map((yearOption) => {
         const isActive = yearOption === selectedYear;
         return (
           <button
