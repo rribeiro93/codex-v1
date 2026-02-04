@@ -330,7 +330,7 @@ export default function ManagePlaces() {
             }}
             disabled={!newCategoryName.trim() || isCreating}
           >
-            {isCreating ? 'Adicionando...' : 'Adicionar categoria'}
+            {isCreating ? 'Adicionando...' : 'Adicionar'}
           </button>
         </div>
       </div>
