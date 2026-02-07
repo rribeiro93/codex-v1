@@ -84,7 +84,7 @@ export function sanitizeTransaction(transaction: Record<string, unknown> = {}): 
 
   const sanitized: CsvTransaction = {
     date: typeof transaction.date === 'string' ? transaction.date : '',
-    place: typeof transaction.place === 'string' ? transaction.place : '',
+    place: typeof transaction.name === 'string' ? transaction.name : '',
     category: typeof transaction.category === 'string' ? transaction.category : '',
     owner: typeof transaction.owner === 'string' ? transaction.owner : '',
     amount: Number.isFinite(transaction.amount) ? (transaction.amount as number) : 0,

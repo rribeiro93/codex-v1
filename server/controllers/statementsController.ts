@@ -437,7 +437,7 @@ export async function handleGetCategorySummary(req: Request, res: Response) {
             placeKey: {
               $toUpper: {
                 $trim: {
-                  input: { $ifNull: ['$transactions.place', ''] }
+                  input: { $ifNull: ['$transactions.name', ''] }
                 }
               }
             },

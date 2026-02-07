@@ -212,7 +212,7 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
           {categories.map((line, index) => (
             <Line
               key={line.category}
-              type="monotone"
+              type="linear"
               dataKey={line.category}
               name={line.category}
               stroke={palette[index % palette.length]}
@@ -220,6 +220,7 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
               dot={{ r: 2 }}
               activeDot={{ r: 5 }}
               hide={!visibleSet.has(line.category)}
+              isAnimationActive={false}
             />
           ))}
         </LineChart>

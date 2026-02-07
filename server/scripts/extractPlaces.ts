@@ -22,11 +22,11 @@ export async function extractPlaces() {
           _id: {
             $toUpper: {
               $trim: {
-                input: '$transactions.place'
+                input: '$transactions.name'
               }
             }
           },
-          transaction: { $first: '$transactions.place' }
+          transaction: { $first: '$transactions.name' }
         }
       }
     ],
