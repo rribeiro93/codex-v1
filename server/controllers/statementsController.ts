@@ -26,6 +26,53 @@ interface TransactionMappingDocument {
   category?: string;
 }
 
+interface CategoryDocument {
+  _id?: ObjectId;
+  name?: string;
+  category?: string;
+}
+
+interface CategorySummaryAggregateEntry {
+  _id?: {
+    month?: unknown;
+    category?: unknown;
+  };
+  totalAmount?: unknown;
+}
+
+async function loadAvailableYears(db: Db): Promise<string[]> {
+  const availableYearsDocs = await db
+    .collection<StatementDocument>('statements')
+    .aggregate([
+      {
+        $match: {
+          month: { $type: 'string', $regex: /^\d{4}-\d{2}$/ }
+        }
+      },
+      {
+        $project: {
+          year: { $substrBytes: ['$month', 0, 4] }
+        }
+      },
+      {
+        $group: {
+          _id: '$year'
+        }
+      },
+      {
+        $sort: {
+          _id: -1
+        }
+      }
+    ])
+    .toArray();
+
+  return availableYearsDocs
+    .map((doc) => doc._id)
+    .filter((year): year is string => typeof year === 'string' && year.trim().length > 0)
+    .map((year) => year.trim());
+}
+
 function resolveDb(req: Request): Db {
   const db = req.app.locals.db as Db | undefined;
   if (!db) {
@@ -101,36 +148,7 @@ export async function handleCreateStatement(req: Request, res: Response) {
 export async function handleGetSummary(req: Request, res: Response) {
   const db = resolveDb(req);
   try {
-    const availableYearsDocs = await db
-      .collection<StatementDocument>('statements')
-      .aggregate([
-        {
-          $match: {
-            month: { $type: 'string', $regex: /^\d{4}-\d{2}$/ }
-          }
-        },
-        {
-          $project: {
-            year: { $substrBytes: ['$month', 0, 4] }
-          }
-        },
-        {
-          $group: {
-            _id: '$year'
-          }
-        },
-        {
-          $sort: {
-            _id: -1
-          }
-        }
-      ])
-      .toArray();
-
-    const years = availableYearsDocs
-      .map((doc) => doc._id)
-      .filter((year): year is string => typeof year === 'string' && year.trim().length > 0)
-      .map((year) => year.trim());
+    const years = await loadAvailableYears(db);
 
     const requestedYear = typeof req.query.year === 'string' ? req.query.year.trim() : '';
     let targetYear = requestedYear;
@@ -341,6 +359,235 @@ export async function handleGetSummary(req: Request, res: Response) {
   } catch (error) {
     console.error('Failed to load statement summary', error);
     res.status(500).json({ error: 'Failed to load statement summary.' });
+  }
+}
+
+export async function handleGetCategorySummary(req: Request, res: Response) {
+  const db = resolveDb(req);
+
+  try {
+    const years = await loadAvailableYears(db);
+    const requestedYear = typeof req.query.year === 'string' ? req.query.year.trim() : '';
+    let targetYear = requestedYear;
+    if (!targetYear || !years.includes(targetYear)) {
+      targetYear = years[0] ?? '';
+    }
+
+    const rawCategories = await db
+      .collection<CategoryDocument>('categories')
+      .find(
+        {},
+        {
+          projection: {
+            name: 1,
+            category: 1
+          }
+        }
+      )
+      .sort({ name: 1 })
+      .toArray();
+
+    const categories = rawCategories
+      .map((entry) => {
+        const category =
+          typeof entry.category === 'string' ? entry.category.trim().toUpperCase() : '';
+        const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+        if (!category) {
+          return null;
+        }
+        return {
+          category,
+          name: name || category
+        };
+      })
+      .filter((entry): entry is { category: string; name: string } => Boolean(entry));
+
+    if (!targetYear) {
+      return res.status(200).json({
+        summary: [],
+        years,
+        selectedYear: '',
+        categories
+      });
+    }
+
+    const aggregated = await db
+      .collection('statements')
+      .aggregate<CategorySummaryAggregateEntry>([
+        {
+          $match: {
+            month: { $regex: new RegExp(`^${targetYear}-\\d{2}$`) }
+          }
+        },
+        {
+          $project: {
+            month: 1,
+            transactions: 1
+          }
+        },
+        {
+          $unwind: {
+            path: '$transactions',
+            preserveNullAndEmptyArrays: false
+          }
+        },
+        {
+          $project: {
+            month: 1,
+            placeKey: {
+              $toUpper: {
+                $trim: {
+                  input: { $ifNull: ['$transactions.place', ''] }
+                }
+              }
+            },
+            transactionCategory: {
+              $toUpper: {
+                $trim: {
+                  input: { $ifNull: ['$transactions.category', ''] }
+                }
+              }
+            },
+            amount: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ['$transactions.amount', null] },
+                    { $ne: ['$transactions.amount', undefined] }
+                  ]
+                },
+                '$transactions.amount',
+                0
+              ]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'transaction_mappings',
+            let: {
+              placeKey: '$placeKey'
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: [
+                      {
+                        $toUpper: {
+                          $trim: {
+                            input: { $ifNull: ['$transaction', ''] }
+                          }
+                        }
+                      },
+                      '$$placeKey'
+                    ]
+                  }
+                }
+              },
+              {
+                $project: {
+                  _id: 0,
+                  category: 1
+                }
+              },
+              {
+                $limit: 1
+              }
+            ],
+            as: 'mapping'
+          }
+        },
+        {
+          $addFields: {
+            category: {
+              $let: {
+                vars: {
+                  mappedCategory: {
+                    $toUpper: {
+                      $trim: {
+                        input: {
+                          $ifNull: [{ $arrayElemAt: ['$mapping.category', 0] }, '']
+                        }
+                      }
+                    }
+                  }
+                },
+                in: {
+                  $cond: [
+                    { $ne: ['$$mappedCategory', ''] },
+                    '$$mappedCategory',
+                    '$transactionCategory'
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              month: '$month',
+              category: '$category'
+            },
+            totalAmount: {
+              $sum: '$amount'
+            }
+          }
+        }
+      ])
+      .toArray();
+
+    const categoryCodes = categories.map((entry) => entry.category);
+    const categorySet = new Set(categoryCodes);
+    const totalsByMonthAndCategory = new Map<string, number>();
+
+    for (const entry of aggregated) {
+      const month =
+        typeof entry._id?.month === 'string' ? entry._id.month.trim() : '';
+      const category =
+        typeof entry._id?.category === 'string' ? entry._id.category.trim().toUpperCase() : '';
+      if (!month || !categorySet.has(category)) {
+        continue;
+      }
+      const totalAmount =
+        typeof entry.totalAmount === 'number' && Number.isFinite(entry.totalAmount)
+          ? entry.totalAmount
+          : 0;
+      totalsByMonthAndCategory.set(
+        `${month}|${category}`,
+        Number.parseFloat(totalAmount.toFixed(2))
+      );
+    }
+
+    const monthKeys = Array.from({ length: 12 }, (_, index) => {
+      const monthNumber = String(index + 1).padStart(2, '0');
+      return `${targetYear}-${monthNumber}`;
+    });
+
+    const summary = monthKeys.map((monthKey) => {
+      const totals: Record<string, number> = {};
+      categoryCodes.forEach((categoryCode) => {
+        const key = `${monthKey}|${categoryCode}`;
+        totals[categoryCode] = totalsByMonthAndCategory.get(key) ?? 0;
+      });
+
+      return {
+        month: monthKey,
+        monthName: getMonthNameFromIsoMonth(monthKey) || 'Unknown',
+        totalsByCategory: totals
+      };
+    });
+
+    return res.status(200).json({
+      summary,
+      years,
+      selectedYear: targetYear,
+      categories
+    });
+  } catch (error) {
+    console.error('Failed to load statement category summary', error);
+    return res.status(500).json({ error: 'Failed to load statement category summary.' });
   }
 }
 

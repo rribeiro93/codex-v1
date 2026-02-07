@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import Upload from './upload/Upload';
 import Categories from './categories/Categories';
 import Summary from './summary/Summary';
+import CategorySummary from './category-summary/CategorySummary';
 
-type MenuItemId = 'upload' | 'summary' | 'categories';
+type MenuItemId = 'upload' | 'summary' | 'categorySummary' | 'categories';
 
 const menuItems: ReadonlyArray<{ id: MenuItemId; label: string }> = [
   { id: 'upload', label: 'Upload' },
-  { id: 'summary', label: 'Resumo' },
-  { id: 'categories', label: 'Categorias' }
+  { id: 'summary', label: 'Resumo Mensal' },
+  { id: 'categorySummary', label: 'Resumo por Categoria' },
+  { id: 'categories', label: 'Gerenciar Categorias' }
 ];
 
 export default function App() {
@@ -18,6 +20,9 @@ export default function App() {
   const renderActivePage = () => {
     if (activePage === 'summary') {
       return <Summary />;
+    }
+    if (activePage === 'categorySummary') {
+      return <CategorySummary />;
     }
     if (activePage === 'categories') {
       return <Categories />;

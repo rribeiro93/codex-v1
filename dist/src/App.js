@@ -9,10 +9,12 @@ const react_1 = require("react");
 const Upload_1 = __importDefault(require("./upload/Upload"));
 const Categories_1 = __importDefault(require("./categories/Categories"));
 const Summary_1 = __importDefault(require("./summary/Summary"));
+const CategorySummary_1 = __importDefault(require("./category-summary/CategorySummary"));
 const menuItems = [
     { id: 'upload', label: 'Upload' },
-    { id: 'summary', label: 'Resumo' },
-    { id: 'categories', label: 'Categorias' }
+    { id: 'summary', label: 'Resumo Mensal' },
+    { id: 'categorySummary', label: 'Linhas por Categoria' },
+    { id: 'categories', label: 'Gerenciar Categorias' }
 ];
 function App() {
     const [activePage, setActivePage] = (0, react_1.useState)('upload');
@@ -20,6 +22,9 @@ function App() {
     const renderActivePage = () => {
         if (activePage === 'summary') {
             return (0, jsx_runtime_1.jsx)(Summary_1.default, {});
+        }
+        if (activePage === 'categorySummary') {
+            return (0, jsx_runtime_1.jsx)(CategorySummary_1.default, {});
         }
         if (activePage === 'categories') {
             return (0, jsx_runtime_1.jsx)(Categories_1.default, {});
