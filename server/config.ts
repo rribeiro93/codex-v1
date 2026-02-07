@@ -11,7 +11,7 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
 const publicDir = path.join(distDir, 'public');
 const assetsDir = path.join(publicDir, 'assets');
-const clientEntry = path.resolve(rootDir, 'src/client/index.tsx');
+const clientEntry = path.resolve(rootDir, 'src/index.tsx');
 const clientBundlePath = path.join(assetsDir, 'client.js');
 
 export const paths = {

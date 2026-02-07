@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Db, ObjectId } from 'mongodb';
-import type { CsvTransaction } from '../../src/shared/types';
+import type { CsvTransaction } from '../../src/models/csv-transaction';
 import {
   resolveStatementMonthName,
   sanitizeTransaction,

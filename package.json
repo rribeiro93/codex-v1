@@ -6,7 +6,7 @@
     "dev": "nodemon --watch server --watch src --ext ts,tsx --exec \"node -r ts-node/register/transpile-only server/index.ts\"",
     "build": "npm run build:server && npm run build:client",
     "build:server": "tsc --project tsconfig.json",
-    "build:client": "esbuild src/client/index.tsx --bundle --sourcemap --outfile=dist/public/assets/client.js --public-path=/assets --loader:.ts=ts --loader:.tsx=tsx",
+    "build:client": "esbuild src/index.tsx --bundle --sourcemap --outfile=dist/public/assets/client.js --public-path=/assets --loader:.ts=ts --loader:.tsx=tsx",
     "start": "NODE_ENV=production node dist/server/index.js"
   },
   "dependencies": {

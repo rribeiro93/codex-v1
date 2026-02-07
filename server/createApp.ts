@@ -1,7 +1,7 @@
 import express from 'express';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import App from '../src/shared/App';
+import App from '../src/App';
 import { renderDocument } from './htmlTemplate';
 import { paths, MONGODB_URI, MONGODB_DB_NAME } from './config';
 import { connectToDatabase, getDatabase } from './database';

@@ -1,19 +1,5 @@
-import type { CsvTransaction } from '../../src/shared/types';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December'
-] as const;
+import type { CsvTransaction } from '../../src/models/csv-transaction';
+import { MONTH_NAMES } from '../../src/models/month-names';
 
 export function getMonthNameFromIsoMonth(value: string): string {
   if (typeof value !== 'string') {
