@@ -220,7 +220,6 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
               dot={{ r: 2 }}
               activeDot={{ r: 5 }}
               hide={!visibleSet.has(line.category)}
-              isAnimationActive={false}
             />
           ))}
         </LineChart>

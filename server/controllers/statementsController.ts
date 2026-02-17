@@ -504,13 +504,11 @@ export async function handleGetCategorySummary(req: Request, res: Response) {
               $let: {
                 vars: {
                   mappedCategory: {
-                    $toUpper: {
                       $trim: {
                         input: {
                           $ifNull: [{ $arrayElemAt: ['$mapping.category', 0] }, '']
                         }
                       }
-                    }
                   }
                 },
                 in: {

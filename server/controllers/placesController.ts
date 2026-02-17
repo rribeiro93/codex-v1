@@ -111,7 +111,6 @@ export async function handleUpdateSinglePlaceCategory(req: Request, res: Respons
 
   if (typeof rawCategoryValue !== 'undefined') {
     updatePayload.$set.category = updateCategory || '';
-    updatePayload.$set.status = updateCategory ? 'labeled' : 'pending';
   }
 
   if (typeof rawCleanNameValue !== 'undefined') {

@@ -608,24 +608,6 @@ export default function TransactionsSection({
   }, [transactions, categoryValueToLabel]);
 
   const showCategorySummary = showTable && categorySummary.items.length > 0;
-  const localInstallmentStats = Array.isArray(transactions)
-    ? transactions.reduce(
-        (acc, transaction) => {
-          if (!isInstallmentTransaction(transaction.installments)) {
-            return acc;
-          }
-
-          const amount = Number(transaction.amount);
-          const numericAmount = Number.isFinite(amount) ? amount : 0;
-
-          return {
-            count: acc.count + 1,
-            total: acc.total + numericAmount
-          };
-        },
-        { count: 0, total: 0 }
-      )
-    : { count: 0, total: 0 };
 
   const renderSortIndicator = (columnKey: TransactionSortColumn) => {
     const isActive = sortColumn === columnKey;
