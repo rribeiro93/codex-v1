@@ -1,5 +1,6 @@
 import React from 'react';
 import CategoryLineChart from './components/CategoryLineChart';
+import CategoryYearlyTable from './components/CategoryYearlyTable';
 import { useMonthlyCategorySummary } from './hooks/useMonthlyCategorySummary';
 import YearPagination from '../summary/components/YearPagination';
 
@@ -77,7 +78,14 @@ export default function CategorySummary() {
         </div>
       )}
       {!error && hasYears && hasCategories && (
-        <CategoryLineChart data={data} categories={categories} />
+        <>
+          <CategoryLineChart data={data} categories={categories} />
+          <CategoryYearlyTable
+            data={data}
+            categories={categories}
+            selectedYear={selectedYear}
+          />
+        </>
       )}
     </section>
   );
