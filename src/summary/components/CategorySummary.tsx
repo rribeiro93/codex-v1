@@ -1,8 +1,7 @@
 import React from 'react';
-import CategoryLineChart from './components/CategoryLineChart';
-import CategoryYearlyTable from './components/CategoryYearlyTable';
-import { useMonthlyCategorySummary } from './hooks/useMonthlyCategorySummary';
-import YearPagination from '../summary/components/YearPagination';
+import CategoryLineChart from './CategoryLineChart';
+import CategoryYearlyTable from './CategoryYearlyTable';
+import { useMonthlyCategorySummary } from '../hooks/useMonthlyCategorySummary';
 
 const styles: Record<string, React.CSSProperties> = {
   wrapper: {
@@ -27,7 +26,11 @@ const styles: Record<string, React.CSSProperties> = {
   }
 };
 
-export default function CategorySummary() {
+interface CategorySummaryProps {
+  selectedYear?: string;
+}
+
+export default function CategorySummary({ selectedYear: requestedYear }: CategorySummaryProps) {
   const {
     data,
     categories,
@@ -39,18 +42,10 @@ export default function CategorySummary() {
     hasData,
     hasCategories,
     handleYearClick
-  } = useMonthlyCategorySummary();
+  } = useMonthlyCategorySummary(requestedYear);
 
   return (
     <section style={styles.wrapper}>
-      <div style={styles.section}>
-        <YearPagination
-          years={years}
-          selectedYear={selectedYear}
-          isLoading={isLoading}
-          onSelect={handleYearClick}
-        />
-      </div>
       {error && (
         <div style={styles.section}>
           <p style={styles.error}>{error}</p>

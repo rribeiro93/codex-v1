@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { currencyFormatter } from '../../summary/utils/formatters';
+import { currencyFormatter } from '../utils/formatters';
 import {
   CategoryLine,
   MonthlyCategorySummaryEntry

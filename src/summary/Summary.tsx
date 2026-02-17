@@ -3,6 +3,7 @@ import SummaryChart from './components/SummaryChart';
 import TransactionsSection from './components/TransactionsSection';
 import YearPagination from './components/YearPagination';
 import { useMonthlySummary } from './hooks/useMonthlySummary';
+import CategorySummary from './components/CategorySummary';
 
 const styles: Record<string, React.CSSProperties> = {
   wrapper: {
@@ -104,6 +105,7 @@ export default function Summary() {
         totalAmount={transactionsTotalAmount}
         installmentStats={installmentStats}
       />
+      <CategorySummary selectedYear={selectedYear} />
     </section>
   );
 }

@@ -3,7 +3,7 @@ import {
   CategoryLine,
   MonthlyCategorySummaryEntry
 } from '../../models/monthly-category-summary';
-import { currencyFormatter } from '../../summary/utils/formatters';
+import { currencyFormatter } from '../utils/formatters';
 
 interface CategoryYearlyTableProps {
   data: MonthlyCategorySummaryEntry[];

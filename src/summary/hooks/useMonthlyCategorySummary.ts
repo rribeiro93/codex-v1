@@ -60,7 +60,9 @@ function translateMonthLabel(label: string): string {
   return translated.charAt(0).toUpperCase() + translated.slice(1);
 }
 
-export function useMonthlyCategorySummary(): UseMonthlyCategorySummaryResult {
+export function useMonthlyCategorySummary(
+  preferredSelectedYear?: string
+): UseMonthlyCategorySummaryResult {
   const [state, setState] = useState<MonthlyCategorySummaryState>(initialState);
   const { data, categories, years, selectedYear, isLoading, error } = state;
 
@@ -176,8 +178,18 @@ export function useMonthlyCategorySummary(): UseMonthlyCategorySummaryResult {
   }, []);
 
   useEffect(() => {
-    loadSummary();
-  }, [loadSummary]);
+    loadSummary(preferredSelectedYear);
+  }, [loadSummary, preferredSelectedYear]);
+
+  useEffect(() => {
+    if (!preferredSelectedYear || preferredSelectedYear === selectedYear) {
+      return;
+    }
+    if (years.length > 0 && !years.includes(preferredSelectedYear)) {
+      return;
+    }
+    loadSummary(preferredSelectedYear);
+  }, [loadSummary, preferredSelectedYear, selectedYear, years]);
 
   const handleYearClick = useCallback(
     (nextYear: string) => {
