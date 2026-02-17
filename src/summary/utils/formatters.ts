@@ -18,13 +18,21 @@ export const formatTransactionDate = (value: string): string => {
     return 'Não disponível';
   }
 
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
+  const isoDateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/);
+  const parsedDate = isoDateMatch
+    ? new Date(
+        Number.parseInt(isoDateMatch[1], 10),
+        Number.parseInt(isoDateMatch[2], 10) - 1,
+        Number.parseInt(isoDateMatch[3], 10)
+      )
+    : new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
     return value;
   }
 
   try {
-    return dateFormatter.format(new Date(parsed));
+    return dateFormatter.format(parsedDate);
   } catch (err) {
     console.error('Não foi possível formatar a data da transação', err);
   }
