@@ -26,61 +26,55 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    width: 'min(1100px, 100%)',
-    backgroundColor: 'rgba(2, 6, 23, 0.65)',
+    width: '100%',
+    boxSizing: 'border-box',
     borderRadius: '1rem',
-    padding: '1.5rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
-    alignSelf: 'center'
-  },
-  title: {
-    margin: 0,
-    color: '#cbd5f5',
-    fontSize: '1rem',
-    fontWeight: 600
+    alignSelf: 'center',
+    marginTop: '1.5rem'
   },
   tableWrapper: {
-    width: '100%',
+   width: '100%',
     borderRadius: '0.75rem',
-    border: '1px solid rgba(148, 163, 184, 0.25)',
-    overflowX: 'auto'
+    border: '1px solid rgba(148, 163, 184, 0.2)',
+    overflowX: 'hidden'
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse'
+    borderCollapse: 'collapse',
+    textAlign: 'center'
   },
   tableHeader: {
     padding: '0.75rem 1rem',
-    borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
     fontSize: '0.8rem',
     letterSpacing: '0.05em',
+    borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
     color: '#94a3b8',
-    textAlign: 'left'
+    textAlign: 'center'
   },
-  tableHeaderNumeric: {
-    textAlign: 'right'
-  },
-  tableCell: {
-    padding: '0.75rem 1rem',
-    borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
-    color: '#e2e8f0',
-    fontSize: '0.95rem'
-  },
-  categoryCell: {
-    fontWeight: 600,
-    color: '#f8fafc'
-  },
-  numericCell: {
-    textAlign: 'right',
-    fontVariantNumeric: 'tabular-nums'
+  tableRow: {
+    transition: 'background-color 0.2s ease'
   },
   tableRowEven: {
     backgroundColor: 'rgba(15, 23, 42, 0.45)'
   },
   tableRowOdd: {
     backgroundColor: 'rgba(15, 23, 42, 0.25)'
+  },
+  tableCell: {
+    padding: '0.75rem 1rem',
+    fontSize: '0.95rem',
+    borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
+    color: '#e2e8f0'
+  },
+  categoryCell: {
+    fontWeight: 600,
+    color: '#f8fafc'
+  },
+  numericCell: {
+    fontVariantNumeric: 'tabular-nums'
   }
 };
 
@@ -127,7 +121,6 @@ export default function CategoryYearlyTable({
 
   return (
     <div style={styles.container}>
-      <p style={styles.title}>Resumo por categoria em {selectedYear || 'ano selecionado'}</p>
       <div style={styles.tableWrapper}>
         <table style={styles.table}>
           <thead>

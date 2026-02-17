@@ -43,7 +43,7 @@ export const formatInstallments = (
   installments: InstallmentDetails | null | undefined
 ): string => {
   if (!installments || typeof installments !== 'object') {
-    return '-';
+    return 'à vista';
   }
 
   const current = Number(installments.current);

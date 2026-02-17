@@ -22,6 +22,7 @@ interface SummaryChartProps {
 const styles: Record<string, React.CSSProperties> = {
   chartContainer: {
     width: 'min(900px, 100%)',
+    boxSizing: 'border-box',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
     padding: '1.5rem',

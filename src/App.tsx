@@ -7,8 +7,8 @@ type MenuItemId = 'upload' | 'summary' | 'categorySummary' | 'categories';
 
 const menuItems: ReadonlyArray<{ id: MenuItemId; label: string }> = [
   { id: 'upload', label: 'Upload' },
-  { id: 'summary', label: 'Resumo Anual' },
-  { id: 'categories', label: 'Gerenciar Categorias' }
+  { id: 'summary', label: 'Resumo' },
+  { id: 'categories', label: 'Categorias' }
 ];
 
 export default function App() {

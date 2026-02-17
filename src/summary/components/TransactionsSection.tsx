@@ -32,25 +32,6 @@ interface CategorySummary {
   items: CategorySummaryItem[];
 }
 
-function isInstallmentTransaction(installments: MonthlyTransaction['installments']) {
-  if (!installments || typeof installments !== 'object') {
-    return false;
-  }
-
-  const current = Number(installments.current);
-  const total = Number(installments.total);
-
-  if (Number.isNaN(total) || total <= 1) {
-    return false;
-  }
-
-  if (Number.isNaN(current) || current <= 0) {
-    return false;
-  }
-
-  return true;
-}
-
 function formatPercentage(value: number) {
   if (!Number.isFinite(value)) {
     return '0%';
@@ -136,17 +117,34 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(148, 163, 184, 0.2)',
     overflowX: 'hidden'
   },
+  transactionsTableWrapper: {
+    maxHeight: '500px',
+    overflowY: 'auto',
+    overflowX: 'auto'
+  },
   table: {
     width: '100%',
-    borderCollapse: 'collapse'
+    borderCollapse: 'collapse',
+    textAlign: 'center'
+  },
+  transactionsTable: {
+    width: '100%',
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    textAlign: 'center'
   },
   tableHeader: {
     padding: '0.75rem 1rem',
     fontSize: '0.8rem',
     letterSpacing: '0.05em',
     borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
-    color: '#94a3b8',
-    textAlign: 'center'
+    color: '#94a3b8'
+  },
+  transactionsTableHeader: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+    backgroundColor: 'rgba(2, 6, 23, 0.95)'
   },
   tableRow: {
     transition: 'background-color 0.2s ease'
@@ -161,8 +159,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0.75rem 1rem',
     fontSize: '0.95rem',
     borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
-    color: '#e2e8f0',
-    textAlign: 'center'
+    color: '#e2e8f0'
   },
   placeCell: {
     display: 'flex',
@@ -203,13 +200,13 @@ const styles: Record<string, React.CSSProperties> = {
     visibility: 'hidden'
   },
   breakdownHeader: {
-    marginBottom: '0.75rem',
-    textAlign: 'center'
+    marginBottom: '0.75rem'
   },
   breakdownTitle: {
     margin: 0,
     fontSize: '1rem',
-    color: '#f8fafc'
+    color: '#f8fafc',
+    textAlign: 'center'
   },
   breakdownTotal: {
     margin: 0,
@@ -217,7 +214,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.9rem'
   },
   numericCell: {
-    textAlign: 'center',
     fontVariantNumeric: 'tabular-nums'
   },
   actionsCell: {
@@ -306,7 +302,8 @@ const styles: Record<string, React.CSSProperties> = {
   summaryTitle: {
     margin: 0,
     fontSize: '1.5rem',
-    color: '#f8fafc'
+    color: '#f8fafc',
+    textAlign: 'center'
   },
   summaryMetrics: {
     display: 'flex',
@@ -727,9 +724,9 @@ export default function TransactionsSection({
           <div style={styles.breakdownHeader}>
             <h3 style={styles.breakdownTitle}>Transações</h3>
           </div>
-          <div style={styles.tableWrapper}>
+          <div style={{ ...styles.tableWrapper, ...styles.transactionsTableWrapper }}>
             <table
-              style={styles.table}
+              style={styles.transactionsTable}
               aria-label={label ? `Transações de ${label}` : 'Transações'}
             >
             <thead>
@@ -737,7 +734,7 @@ export default function TransactionsSection({
                 {columns.map((column) => (
                   <th
                     key={column.key}
-                    style={styles.tableHeader}
+                    style={{ ...styles.tableHeader, ...styles.transactionsTableHeader }}
                     aria-sort={getAriaSort(column.key)}
                   >
                     <button
@@ -754,7 +751,7 @@ export default function TransactionsSection({
                     </button>
                   </th>
                 ))}
-                <th style={styles.tableHeader}></th>
+                <th style={{ ...styles.tableHeader, ...styles.transactionsTableHeader }}></th>
               </tr>
             </thead>
             <tbody>

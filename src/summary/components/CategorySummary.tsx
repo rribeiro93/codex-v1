@@ -14,7 +14,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center'
   },
   section: {
-    width: 'min(1200px, 100%)'
+    width: 'min(900px, 100%)',
   },
   error: {
     margin: 0,
@@ -73,14 +73,14 @@ export default function CategorySummary({ selectedYear: requestedYear }: Categor
         </div>
       )}
       {!error && hasYears && hasCategories && (
-        <>
+        <div style={styles.section}>
           <CategoryLineChart data={data} categories={categories} />
           <CategoryYearlyTable
             data={data}
             categories={categories}
             selectedYear={selectedYear}
           />
-        </>
+        </div>
       )}
     </section>
   );

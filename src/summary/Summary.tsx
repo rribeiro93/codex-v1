@@ -25,6 +25,24 @@ const styles: Record<string, React.CSSProperties> = {
   emptyMessage: {
     margin: 0,
     color: '#cbd5f5'
+  },
+  sectionDivider: {
+    width: 'min(900px, 100%)',
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: '0.75rem'
+  },
+  sectionDividerLine: {
+    flex: 1,
+    border: 0,
+    borderTop: '1px solid rgba(148, 163, 184, 0.35)'
+  },
+  sectionDividerTitle: {
+    margin: 0,
+    color: '#cbd5f5',
+    fontSize: '1.5rem',
+    fontWeight: 600,
+    whiteSpace: 'nowrap'
   }
 };
 
@@ -85,6 +103,11 @@ export default function Summary() {
           </p>
         </div>
       )}
+      <div style={styles.sectionDivider}>
+        <hr style={styles.sectionDividerLine} />
+        <p style={styles.sectionDividerTitle}>Resumo</p>
+        <hr style={styles.sectionDividerLine} />
+      </div>
       <SummaryChart
         data={data}
         selectedYear={selectedYear}
@@ -105,6 +128,11 @@ export default function Summary() {
         totalAmount={transactionsTotalAmount}
         installmentStats={installmentStats}
       />
+      <div style={styles.sectionDivider}>
+        <hr style={styles.sectionDividerLine} />
+        <p style={styles.sectionDividerTitle}>Por categoria</p>
+        <hr style={styles.sectionDividerLine} />
+      </div>
       <CategorySummary selectedYear={selectedYear} />
     </section>
   );
