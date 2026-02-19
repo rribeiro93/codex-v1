@@ -57,7 +57,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '0.5rem',
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   legendButton: {
     border: '1px solid rgba(148, 163, 184, 0.4)',
