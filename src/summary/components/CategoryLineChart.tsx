@@ -161,7 +161,7 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
   return (
     <div style={styles.chartContainer}>
       <div style={styles.chartHeader}>
-        <p style={styles.averageLabel}>Resumo Anual | Por Categoria</p>
+        <p style={styles.averageLabel}>Despesa Mensal por Categoria</p>
       </div>
       <ResponsiveContainer width="100%" height={430}>
         <LineChart data={chartData}>

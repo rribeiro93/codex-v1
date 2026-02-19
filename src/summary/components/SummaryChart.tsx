@@ -68,7 +68,7 @@ export default function SummaryChart({
   return (
     <div style={styles.chartContainer}>
       <div style={styles.chartHeader}>
-        <p style={styles.averageLabel}>Resumo Anual | Média: {formattedAverage}</p>
+        <p style={styles.averageLabel}>Despesa Mensal | Média: {formattedAverage}</p>
       </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={data}>

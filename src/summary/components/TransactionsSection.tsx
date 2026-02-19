@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip
+} from 'recharts';
+import {
   formatCurrency,
   formatInstallments,
   formatTransactionDate
@@ -38,6 +45,17 @@ function formatPercentage(value: number) {
   }
   return `${value.toFixed(1)}%`;
 }
+
+const categoryPiePalette = [
+  '#38bdf8',
+  '#a78bfa',
+  '#84cc16',
+  '#f97316',
+  '#14b8a6',
+  '#f43f5e',
+  '#eab308',
+  '#06b6d4'
+];
 
 type RawCategory = {
   id?: unknown;
@@ -283,6 +301,11 @@ const styles: Record<string, React.CSSProperties> = {
   breakdownLayer: {
     width: '100%',
     alignSelf: 'center'
+  },
+  breakdownChartWrapper: {
+    width: '100%',
+    height: '320px',
+    padding: '0.75rem'
   },
   transactionsLayer: {
     width: '100%',
@@ -680,42 +703,53 @@ export default function TransactionsSection({
           <div style={styles.breakdownHeader}>
             <h3 style={styles.breakdownTitle}>Distribuição por categoria</h3>
           </div>
-          <div style={styles.tableWrapper}>
-            <table
-              style={styles.table}
-              aria-label={
-                label
-                  ? `Distribuição por categoria de ${label}`
-                  : 'Distribuição por categoria'
-              }
-            >
-              <thead>
-                <tr>
-                  <th style={styles.tableHeader}>Categoria</th>
-                  <th style={styles.tableHeader}>Valor total</th>
-                  <th style={styles.tableHeader}>Participação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categorySummary.items.map((item, index) => (
-                  <tr
-                    key={item.category}
-                    style={{
-                      ...styles.tableRow,
-                      ...(index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd)
-                    }}
-                  >
-                    <td style={styles.tableCell}>{item.category}</td>
-                    <td style={{ ...styles.tableCell, ...styles.numericCell }}>
-                      {formatCurrency(item.amount)}
-                    </td>
-                    <td style={{ ...styles.tableCell, ...styles.numericCell }}>
-                      {formatPercentage(item.percentage)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div
+            style={styles.breakdownChartWrapper}
+            aria-label={
+              label
+                ? `Distribuição por categoria de ${label}`
+                : 'Distribuição por categoria'
+            }
+            role="img"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categorySummary.items}
+                  dataKey="amount"
+                  nameKey="category"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="82%"
+                  labelLine={false}
+                  label={({ name, percent }) => {
+                    const safePercent = Number(percent) * 100;
+                    return `${name} (${formatPercentage(safePercent)})`;
+                  }}
+                >
+                  {categorySummary.items.map((item, index) => (
+                    <Cell
+                      key={`category-slice-${item.category}`}
+                      fill={categoryPiePalette[index % categoryPiePalette.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number, name: string) => {
+                    const numericValue = Number(value);
+                    const amount = Number.isFinite(numericValue) ? numericValue : 0;
+                    const percentage =
+                      categorySummary.totalAmount > 0
+                        ? (amount / categorySummary.totalAmount) * 100
+                        : 0;
+                    return [
+                      `${formatCurrency(amount)} (${formatPercentage(percentage)})`,
+                      name
+                    ];
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
