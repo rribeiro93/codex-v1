@@ -22,18 +22,11 @@ interface CategoryLineChartProps {
 
 const palette = [
   '#38bdf8',
-  '#f97316',
-  '#22c55e',
-  '#f43f5e',
-  '#eab308',
-  '#14b8a6',
   '#a78bfa',
-  '#fb7185',
-  '#06b6d4',
-  '#84cc16',
-  '#f59e0b',
-  '#ef4444'
+  '#84cc16'
 ];
+
+const MAX_VISIBLE_CATEGORIES = 3;
 
 const styles: Record<string, React.CSSProperties> = {
   chartContainer: {
@@ -73,6 +66,10 @@ const styles: Record<string, React.CSSProperties> = {
   legendButtonInactive: {
     opacity: 0.5
   },
+  legendButtonDisabled: {
+    opacity: 0.3,
+    cursor: 'not-allowed'
+  },
   legendDot: {
     display: 'inline-block',
     width: '0.55rem',
@@ -106,9 +103,42 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
     });
   }, [categories, data]);
 
+  const totalByCategory = useMemo(() => {
+    const totals: Record<string, number> = {};
+    categories.forEach((line) => {
+      totals[line.category] = 0;
+    });
+
+    data.forEach((entry) => {
+      categories.forEach((line) => {
+        const amount = Number(entry.totalsByCategory[line.category] ?? 0);
+        totals[line.category] += Number.isFinite(amount) ? amount : 0;
+      });
+    });
+
+    return totals;
+  }, [categories, data]);
+
+  const sortedCategoryCodes = useMemo(() => {
+    return [...categories]
+      .sort(
+        (a, b) =>
+          (totalByCategory[b.category] ?? 0) - (totalByCategory[a.category] ?? 0)
+      )
+      .map((line) => line.category);
+  }, [categories, totalByCategory]);
+
+  const colorByVisibleCategory = useMemo(() => {
+    const next: Record<string, string> = {};
+    visibleCategoryCodes.forEach((categoryCode, index) => {
+      next[categoryCode] = palette[index % palette.length];
+    });
+    return next;
+  }, [visibleCategoryCodes]);
+
   useEffect(() => {
-    setVisibleCategoryCodes(categories.map((line) => line.category));
-  }, [categories]);
+    setVisibleCategoryCodes(sortedCategoryCodes.slice(0, MAX_VISIBLE_CATEGORIES));
+  }, [sortedCategoryCodes]);
 
   const visibleSet = useMemo(() => new Set(visibleCategoryCodes), [visibleCategoryCodes]);
 
@@ -149,24 +179,20 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
             contentStyle={styles.tooltip}
           />
           <Legend
-            content={(legendProps: any) => {
-              const payload = Array.isArray(legendProps?.payload) ? legendProps.payload : [];
-              if (!payload.length) {
+            content={() => {
+              if (!sortedCategoryCodes.length) {
                 return null;
               }
 
               return (
                 <div style={styles.legendContainer}>
-                  {payload.map((item: any) => {
-                    const categoryCode =
-                      typeof item?.value === 'string' ? item.value : String(item?.value ?? '');
-                    if (!categoryCode) {
-                      return null;
-                    }
+                  {sortedCategoryCodes.map((categoryCode) => {
                     const isVisible = visibleSet.has(categoryCode);
                     const displayName = nameByCategory[categoryCode] || categoryCode;
-                    const color =
-                      typeof item?.color === 'string' && item.color ? item.color : '#94a3b8';
+                    const color = isVisible
+                      ? colorByVisibleCategory[categoryCode] || '#94a3b8'
+                      : '#94a3b8';
+                    const canEnableMore = isVisible || visibleSet.size < MAX_VISIBLE_CATEGORIES;
 
                     return (
                       <button
@@ -174,8 +200,10 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
                         type="button"
                         style={{
                           ...styles.legendButton,
-                          ...(isVisible ? null : styles.legendButtonInactive)
+                          ...(isVisible ? null : styles.legendButtonInactive),
+                          ...(canEnableMore ? null : styles.legendButtonDisabled)
                         }}
+                        disabled={!canEnableMore}
                         onClick={() => {
                           setVisibleCategoryCodes((prev) => {
                             const prevSet = new Set(prev);
@@ -187,6 +215,9 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
                               return categories
                                 .map((line) => line.category)
                                 .filter((code) => prevSet.has(code));
+                            }
+                            if (prevSet.size >= MAX_VISIBLE_CATEGORIES) {
+                              return prev;
                             }
                             prevSet.add(categoryCode);
                             return categories
@@ -204,13 +235,13 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
               );
             }}
           />
-          {categories.map((line, index) => (
+          {categories.map((line) => (
             <Line
               key={line.category}
               type="linear"
               dataKey={line.category}
               name={line.category}
-              stroke={palette[index % palette.length]}
+              stroke={colorByVisibleCategory[line.category] || '#94a3b8'}
               strokeWidth={2}
               dot={{ r: 2 }}
               activeDot={{ r: 5 }}
