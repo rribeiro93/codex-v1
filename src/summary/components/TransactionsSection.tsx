@@ -275,29 +275,29 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'background-color 0.2s ease, color 0.2s ease'
   },
   headerLayer: {
-    width: 'min(900px, 100%)',
+    width: '100%',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
-    padding: '1.5rem',
     border: '1px solid rgba(148, 163, 184, 0.2)'
   },
   breakdownLayer: {
-    width: 'min(780px, 100%)',
+    width: '100%',
     alignSelf: 'center'
   },
   transactionsLayer: {
-    width: 'min(1200px, 100%)',
+    width: '100%',
     alignSelf: 'center',
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem'
+    gap: '0.75rem',
+    alignItems: 'center'
   },
   summaryLayer: {
-    width: 'min(1200px, 100%)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '1rem'
+    gap: '1rem',
+    padding: '1.5rem'
   },
   summaryTitle: {
     margin: 0,

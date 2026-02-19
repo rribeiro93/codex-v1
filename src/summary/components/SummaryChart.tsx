@@ -21,7 +21,7 @@ interface SummaryChartProps {
 
 const styles: Record<string, React.CSSProperties> = {
   chartContainer: {
-    width: 'min(900px, 100%)',
+    width: '100%',
     boxSizing: 'border-box',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
@@ -33,7 +33,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   chartHeader: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: '1rem'
   },
@@ -68,7 +68,7 @@ export default function SummaryChart({
   return (
     <div style={styles.chartContainer}>
       <div style={styles.chartHeader}>
-        <p style={styles.averageLabel}>Média: {formattedAverage}</p>
+        <p style={styles.averageLabel}>Resumo Anual | Média: {formattedAverage}</p>
       </div>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={data}>

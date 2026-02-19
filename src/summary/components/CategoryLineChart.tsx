@@ -40,6 +40,18 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '1rem',
     alignSelf: 'center'
   },
+  chartHeader: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  averageLabel: {
+    margin: 0,
+    color: '#cbd5f5',
+    fontSize: '1rem',
+    fontWeight: 600
+  },
   tooltip: {
     backgroundColor: 'rgba(15, 23, 42, 0.9)',
     border: '1px solid rgba(148, 163, 184, 0.3)',
@@ -148,6 +160,9 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
 
   return (
     <div style={styles.chartContainer}>
+      <div style={styles.chartHeader}>
+        <p style={styles.averageLabel}>Resumo Anual | Por Categoria</p>
+      </div>
       <ResponsiveContainer width="100%" height={430}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />

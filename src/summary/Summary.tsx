@@ -16,7 +16,28 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center'
   },
   section: {
-    width: 'min(1200px, 100%)'
+    width: '100%'
+  },
+  contentRow: {
+    width: '100%',
+    display: 'flex',
+    gap: '1.5rem',
+    alignItems: 'flex-start'
+  },
+  leftColumn: {
+    flex: '1 1 50%',
+    width: '100%',
+    maxWidth: '50%',
+    minWidth: 0
+  },
+  rightColumn: {
+    flex: '1 1 50%',
+    width: '100%',
+    maxWidth: '50%',
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem'
   },
   error: {
     margin: 0,
@@ -25,24 +46,6 @@ const styles: Record<string, React.CSSProperties> = {
   emptyMessage: {
     margin: 0,
     color: '#cbd5f5'
-  },
-  sectionDivider: {
-    width: 'min(900px, 100%)',
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: '0.75rem'
-  },
-  sectionDividerLine: {
-    flex: 1,
-    border: 0,
-    borderTop: '1px solid rgba(148, 163, 184, 0.35)'
-  },
-  sectionDividerTitle: {
-    margin: 0,
-    color: '#cbd5f5',
-    fontSize: '1.5rem',
-    fontWeight: 600,
-    whiteSpace: 'nowrap'
   }
 };
 
@@ -103,37 +106,33 @@ export default function Summary() {
           </p>
         </div>
       )}
-      <div style={styles.sectionDivider}>
-        <hr style={styles.sectionDividerLine} />
-        <p style={styles.sectionDividerTitle}>Resumo</p>
-        <hr style={styles.sectionDividerLine} />
+      <div style={styles.contentRow}>
+        <div style={styles.leftColumn}>
+          <CategorySummary selectedYear={selectedYear} />
+        </div>
+        <div style={styles.rightColumn}>
+          <SummaryChart
+            data={data}
+            selectedYear={selectedYear}
+            onBarClick={handleBarClick}
+            averageAmount={yearlyAverage}
+          />
+          <TransactionsSection
+            selectedMonth={selectedMonth}
+            label={transactionsLabel}
+            isLoading={isTransactionsLoading}
+            error={transactionsError}
+            transactions={sortedTransactions}
+            hasTransactions={hasTransactions}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onTransactionMappingChange={handleTransactionMappingChange}
+            totalAmount={transactionsTotalAmount}
+            installmentStats={installmentStats}
+          />
+        </div>
       </div>
-      <SummaryChart
-        data={data}
-        selectedYear={selectedYear}
-        onBarClick={handleBarClick}
-        averageAmount={yearlyAverage}
-      />
-      <TransactionsSection
-        selectedMonth={selectedMonth}
-        label={transactionsLabel}
-        isLoading={isTransactionsLoading}
-        error={transactionsError}
-        transactions={sortedTransactions}
-        hasTransactions={hasTransactions}
-        sortColumn={sortColumn}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-        onTransactionMappingChange={handleTransactionMappingChange}
-        totalAmount={transactionsTotalAmount}
-        installmentStats={installmentStats}
-      />
-      <div style={styles.sectionDivider}>
-        <hr style={styles.sectionDividerLine} />
-        <p style={styles.sectionDividerTitle}>Por categoria</p>
-        <hr style={styles.sectionDividerLine} />
-      </div>
-      <CategorySummary selectedYear={selectedYear} />
     </section>
   );
 }
