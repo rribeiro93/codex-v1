@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { currencyFormatter } from '../utils/formatters';
+import { currencyFormatter, formatCompactCurrency } from '../utils/formatters';
 import {
   CategoryLine,
   MonthlyCategorySummaryEntry
@@ -34,7 +34,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxSizing: 'border-box',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
-    padding: '1.5rem',
+    padding: '1rem 3rem 1rem 1rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
@@ -177,7 +177,7 @@ export default function CategoryLineChart({ data, categories }: CategoryLineChar
             style={{ fontSize: '0.85rem' }}
             tickLine={false}
             width={90}
-            tickFormatter={(value) => currencyFormatter.format(Number(value))}
+            tickFormatter={(value) => formatCompactCurrency(Number(value))}
           />
           <Tooltip
             formatter={(value, name) => {

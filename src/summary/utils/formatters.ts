@@ -13,6 +13,34 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
 export const formatCurrency = (value: number | string) =>
   currencyFormatter.format(Number(value || 0));
 
+export const formatCompactCurrency = (value: number | string): string => {
+  const numericValue = Number(value || 0);
+  const safeValue = Number.isFinite(numericValue) ? numericValue : 0;
+  const absoluteValue = Math.abs(safeValue);
+  const sign = safeValue < 0 ? '-' : '';
+
+  if (absoluteValue >= 1_000_000_000) {
+    const scaled = absoluteValue / 1_000_000_000;
+    const compact = scaled.toFixed(1).replace(/\.0$/, '');
+    return `R$ ${sign}${compact}b`;
+  }
+
+  if (absoluteValue >= 1_000_000) {
+    const scaled = absoluteValue / 1_000_000;
+    const compact = scaled.toFixed(1).replace(/\.0$/, '');
+    return `R$ ${sign}${compact}m`;
+  }
+
+  if (absoluteValue >= 1_000) {
+    const scaled = absoluteValue / 1_000;
+    const compact = scaled.toFixed(1).replace(/\.0$/, '');
+    return `R$ ${sign}${compact}k`;
+  }
+
+  const compactSmall = absoluteValue.toFixed(0);
+  return `R$ ${sign}${compactSmall}`;
+};
+
 export const formatTransactionDate = (value: string): string => {
   if (typeof value !== 'string' || !value) {
     return 'Não disponível';

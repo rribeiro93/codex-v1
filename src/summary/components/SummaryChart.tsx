@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { currencyFormatter } from '../utils/formatters';
+import { currencyFormatter, formatCompactCurrency } from '../utils/formatters';
 import { MonthlySummaryEntry } from '../../models/monthly-symmary-entry';
 
 interface SummaryChartProps {
@@ -25,7 +25,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxSizing: 'border-box',
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderRadius: '1rem',
-    padding: '1.5rem',
+    padding: '1rem 3rem 1rem 1rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '1rem',
@@ -84,7 +84,7 @@ export default function SummaryChart({
             style={{ fontSize: '0.85rem' }}
             tickLine={false}
             width={80}
-            tickFormatter={(value) => currencyFormatter.format(Number(value))}
+            tickFormatter={(value) => formatCompactCurrency(Number(value))}
           />
           <Tooltip
             cursor={{ fill: 'rgba(148, 163, 184, 0.15)' }}
