@@ -136,7 +136,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflowX: 'hidden'
   },
   transactionsTableWrapper: {
-    maxHeight: '500px',
+    maxHeight: '700px',
     overflowY: 'auto',
     overflowX: 'auto'
   },
@@ -378,6 +378,9 @@ interface TransactionsSectionProps {
   installmentStats: InstallmentStats;
 }
 
+const ALL_CATEGORIES_FILTER_VALUE = '__all_categories__';
+const UNCATEGORIZED_FILTER_VALUE = '__uncategorized__';
+
 export default function TransactionsSection({
   selectedMonth,
   label,
@@ -399,6 +402,7 @@ export default function TransactionsSection({
   const [editingCategory, setEditingCategory] = useState('');
   const [editingCleanName, setEditingCleanName] = useState('');
   const [savingTransactionId, setSavingTransactionId] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(ALL_CATEGORIES_FILTER_VALUE);
   const [categoryActionError, setCategoryActionError] = useState('');
   const [categoryActionMessage, setCategoryActionMessage] = useState('');
   const categoryValueToLabel = useMemo(() => {
@@ -582,6 +586,73 @@ export default function TransactionsSection({
   };
 
   const showTable = !isLoading && !error && hasTransactions;
+  const transactionCategoryFilterOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+
+    for (const transaction of transactions) {
+      const categoryValue =
+        typeof transaction.category === 'string' ? transaction.category.trim() : '';
+      if (!categoryValue) {
+        continue;
+      }
+
+      const categoryLabel =
+        categoryValueToLabel.get(categoryValue) || categoryValue;
+
+      if (!seen.has(categoryValue)) {
+        seen.set(categoryValue, categoryLabel);
+      }
+    }
+
+    return Array.from(seen.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, {
+          sensitivity: 'base'
+        })
+      );
+  }, [transactions, categoryValueToLabel]);
+
+  const filteredTransactions = useMemo(() => {
+    if (selectedCategoryFilter === ALL_CATEGORIES_FILTER_VALUE) {
+      return transactions;
+    }
+
+    return transactions.filter((transaction) => {
+      const categoryValue =
+        typeof transaction.category === 'string' ? transaction.category.trim() : '';
+
+      if (selectedCategoryFilter === UNCATEGORIZED_FILTER_VALUE) {
+        return !categoryValue;
+      }
+
+      return categoryValue === selectedCategoryFilter;
+    });
+  }, [transactions, selectedCategoryFilter]);
+
+  const filteredTransactionsTotalAmount = useMemo(() => {
+    return filteredTransactions.reduce((sum, transaction) => {
+      const amount = Number(transaction.amount);
+      const numericAmount = Number.isFinite(amount) ? amount : 0;
+      return sum + numericAmount;
+    }, 0);
+  }, [filteredTransactions]);
+
+  useEffect(() => {
+    if (selectedCategoryFilter === ALL_CATEGORIES_FILTER_VALUE) {
+      return;
+    }
+
+    if (
+      selectedCategoryFilter === UNCATEGORIZED_FILTER_VALUE ||
+      transactionCategoryFilterOptions.some((option) => option.value === selectedCategoryFilter)
+    ) {
+      return;
+    }
+
+    setSelectedCategoryFilter(ALL_CATEGORIES_FILTER_VALUE);
+  }, [selectedCategoryFilter, transactionCategoryFilterOptions]);
+
   const categorySummary = useMemo<CategorySummary>(() => {
     if (!Array.isArray(transactions) || !transactions.length) {
       return { totalAmount: 0, items: [] };
@@ -758,6 +829,28 @@ export default function TransactionsSection({
           <div style={styles.breakdownHeader}>
             <h3 style={styles.breakdownTitle}>Transações</h3>
           </div>
+          <div style={{ width: '100%', maxWidth: '320px' }}>
+            <label style={styles.mappingLabel} htmlFor="transactions-category-filter">
+              Filtrar por categoria
+              <select
+                id="transactions-category-filter"
+                value={selectedCategoryFilter}
+                onChange={(event) => setSelectedCategoryFilter(event.target.value)}
+                style={styles.select}
+              >
+                <option value={ALL_CATEGORIES_FILTER_VALUE}>Todas as categorias</option>
+                <option value={UNCATEGORIZED_FILTER_VALUE}>Não categorizado</option>
+                {transactionCategoryFilterOptions.map((option) => (
+                  <option key={`table-filter-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {!filteredTransactions.length && (
+            <p style={styles.infoMessage}>Nenhuma transação encontrada para o filtro selecionado.</p>
+          )}
           <div style={{ ...styles.tableWrapper, ...styles.transactionsTableWrapper }}>
             <table
               style={styles.transactionsTable}
@@ -789,7 +882,7 @@ export default function TransactionsSection({
               </tr>
             </thead>
             <tbody>
-              {transactions.map((transaction, index) => {
+              {filteredTransactions.map((transaction, index) => {
                 const cleanName = typeof transaction.cleanName === 'string' ? transaction.cleanName.trim() : '';
                 const name = typeof transaction.name === 'string' ? transaction.name.trim() : '';
                   const showOriginal = cleanName && name && cleanName !== name;
@@ -885,6 +978,32 @@ export default function TransactionsSection({
                 );
               })}
             </tbody>
+            {selectedCategoryFilter !== ALL_CATEGORIES_FILTER_VALUE && (
+              <tfoot>
+                <tr style={{ ...styles.tableRow, ...styles.tableRowEven }}>
+                  <td
+                    colSpan={4}
+                    style={{
+                      ...styles.tableCell,
+                      fontWeight: 700,
+                      textAlign: 'right'
+                    }}
+                  >
+                    Total:
+                  </td>
+                  <td
+                    style={{
+                      ...styles.tableCell,
+                      ...styles.numericCell,
+                      fontWeight: 700
+                    }}
+                  >
+                    {formatCurrency(filteredTransactionsTotalAmount)}
+                  </td>
+                  <td style={styles.tableCell}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
