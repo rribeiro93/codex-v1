@@ -145,15 +145,14 @@ function normalizeInstallmentsField(value: unknown): InstallmentDetails | null {
 
 export function mapCsvRowToTransaction(row: unknown[] = []): CsvTransaction {
   const originalDate = row[0];
-  const originalPlace = row[1] ?? '';
+  const originalName = row[1] ?? '';
   const originalOwner = row[2];
   const originalAmount = row[3];
   const originalInstallments = row[4] ?? '';
 
   return {
     date: normalizeDateCell(originalDate),
-    place: typeof originalPlace === 'string' ? originalPlace : '',
-    category: '',
+    name: typeof originalName === 'string' ? originalName.trim() : '',
     owner: formatOwnerName(originalOwner),
     amount: parseAmountCell(originalAmount),
     installments: normalizeInstallmentsField(originalInstallments)

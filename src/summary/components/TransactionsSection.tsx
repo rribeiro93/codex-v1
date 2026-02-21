@@ -485,8 +485,8 @@ export default function TransactionsSection({
     const initialCleanName =
       typeof transaction.cleanName === 'string' && transaction.cleanName.trim()
         ? transaction.cleanName.trim()
-        : typeof transaction.place === 'string'
-          ? transaction.place.trim()
+        : typeof transaction.name === 'string'
+          ? transaction.name.trim()
           : '';
     setEditingCleanName(initialCleanName);
     setCategoryActionError('');
@@ -520,7 +520,7 @@ export default function TransactionsSection({
     } else {
       const fallbackTransaction =
         (typeof transaction.mappingTransaction === 'string' && transaction.mappingTransaction.trim()) ||
-        (typeof transaction.place === 'string' && transaction.place.trim()) ||
+        (typeof transaction.name === 'string' && transaction.name.trim()) ||
         (typeof transaction.cleanName === 'string' && transaction.cleanName.trim()) ||
         '';
       if (!fallbackTransaction) {
@@ -548,19 +548,19 @@ export default function TransactionsSection({
       }
 
       const body = await response.json();
-      const place = body?.place;
+      const name = body?.name;
       const updatedCategory =
-        typeof place?.category === 'string' ? place.category : trimmedCategory;
+        typeof name?.category === 'string' ? name.category : trimmedCategory;
       const updatedCleanName =
-        typeof place?.cleanName === 'string' ? place.cleanName : trimmedCleanName;
-      const updatedMappingId = typeof place?.id === 'string' ? place.id : transaction.mappingId;
+        typeof name?.cleanName === 'string' ? name.cleanName : trimmedCleanName;
+      const updatedMappingId = typeof name?.id === 'string' ? name.id : transaction.mappingId;
       const updatedMappingTransaction =
-        typeof place?.transaction === 'string'
-          ? place.transaction
+        typeof name?.transaction === 'string'
+          ? name.transaction
           : transaction.mappingTransaction;
       const friendlyName =
         (typeof updatedCleanName === 'string' && updatedCleanName.trim()) ||
-        (typeof transaction.place === 'string' && transaction.place.trim()) ||
+        (typeof transaction.name === 'string' && transaction.name.trim()) ||
         'transação';
 
       onTransactionMappingChange(transaction.id, {
@@ -790,18 +790,12 @@ export default function TransactionsSection({
             </thead>
             <tbody>
               {transactions.map((transaction, index) => {
-                const cleanName =
-                  typeof transaction.cleanName === 'string' ? transaction.cleanName.trim() : '';
-                const placeValue =
-                  typeof transaction.place === 'string' ? transaction.place.trim() : '';
-                const primaryPlace = cleanName || placeValue || 'Não disponível';
-                const showOriginal = cleanName && placeValue && cleanName !== placeValue;
-                const categoryValue =
-                  typeof transaction.category === 'string' ? transaction.category.trim() : '';
-                const categoryLabel =
-                  categoryValue && categoryValueToLabel.has(categoryValue)
-                    ? categoryValueToLabel.get(categoryValue)
-                    : '';
+                const cleanName = typeof transaction.cleanName === 'string' ? transaction.cleanName.trim() : '';
+                const name = typeof transaction.name === 'string' ? transaction.name.trim() : '';
+                  const showOriginal = cleanName && name && cleanName !== name;
+                const primaryPlace = cleanName || name || 'Não disponível';
+                const categoryValue = typeof transaction.category === 'string' ? transaction.category.trim() : '';
+                const categoryLabel = categoryValue && categoryValueToLabel.has(categoryValue) ? categoryValueToLabel.get(categoryValue) : '';
                 const categoryDisplay = categoryLabel || categoryValue || 'Não categorizado';
 
                 return (
@@ -817,7 +811,7 @@ export default function TransactionsSection({
                       <div style={styles.placeCell}>
                         <span style={styles.placePrimary}>{primaryPlace}</span>
                         {showOriginal && (
-                          <span style={styles.placeSecondary}>{placeValue}</span>
+                          <span style={styles.placeSecondary}>{name}</span>
                         )}
                       </div>
                     </td>

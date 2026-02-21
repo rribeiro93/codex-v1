@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MonthlySummaryEntry, MonthlyTransaction } from '../../models/monthly-symmary-entry';
 
-export type TransactionSortColumn = 'date' | 'amount' | 'installments' | 'place' | 'category' | 'owner';
+export type TransactionSortColumn = 'date' | 'amount' | 'installments' | 'cleanName' | 'category' | 'owner';
 
 interface MonthlySummaryState {
   data: MonthlySummaryEntry[];
@@ -127,10 +127,9 @@ const resolveSortValue = (
       }
       return total * 1000 + current;
     }
-    case 'place': {
+    case 'cleanName': {
       const cleanName = typeof item.cleanName === 'string' ? item.cleanName.trim() : '';
-      const place =
-        cleanName || (typeof item.place === 'string' ? item.place.trim() : '');
+      const place = cleanName || (typeof item.cleanName === 'string' ? item.cleanName.trim() : '');
       if (!place) {
         return null;
       }
@@ -338,7 +337,7 @@ export function useMonthlySummary(): UseMonthlySummaryResult {
         const normalizedTransactions: MonthlyTransaction[] = payloadTransactions.map(
           (transaction: Record<string, any>, index: number) => {
             const date = typeof transaction?.date === 'string' ? transaction.date : '';
-            const place = typeof transaction?.place === 'string' ? transaction.place : '';
+            const name = typeof transaction?.name === 'string' ? transaction.name : '';
             const cleanName =
               typeof transaction?.cleanName === 'string' ? transaction.cleanName : '';
             const category =
@@ -374,7 +373,7 @@ export function useMonthlySummary(): UseMonthlySummaryResult {
             return {
               id: statementId ? `${statementId}-${index}` : `${targetMonth}-${index}`,
               date,
-              place,
+              name,
               cleanName,
               category,
               owner,

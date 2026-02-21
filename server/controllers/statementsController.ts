@@ -647,7 +647,7 @@ export async function handleGetTransactions(req: Request, res: Response) {
         }
         const normalized = sanitizeTransaction(transaction);
         if (normalized) {
-          const placeValue = typeof normalized.place === 'string' ? normalized.place : '';
+          const placeValue = typeof normalized.name === 'string' ? normalized.name : '';
           if (placeValue) {
             uniquePlaces.add(placeValue);
           }
@@ -689,7 +689,7 @@ export async function handleGetTransactions(req: Request, res: Response) {
     }
 
     const enrichedTransactions = transactions.map((transaction) => {
-      const lookupKey = normalizeTransactionKey(transaction.place);
+      const lookupKey = normalizeTransactionKey(transaction.name);
       const mapping = lookupKey ? mappingByKey.get(lookupKey) : null;
       const mappedCategory =
         typeof mapping?.category === 'string' ? mapping.category.trim() : '';
@@ -703,7 +703,7 @@ export async function handleGetTransactions(req: Request, res: Response) {
           mappedCategory || (typeof transaction.category === 'string' ? transaction.category : ''),
         mappingId: mapping?.id || '',
         mappingTransaction:
-          mapping?.transaction || (typeof transaction.place === 'string' ? transaction.place : '')
+          mapping?.transaction || (typeof transaction.name === 'string' ? transaction.name : '')
       };
     });
 

@@ -2,8 +2,7 @@ import { InstallmentDetails } from "./installment-details";
 
 export interface CsvTransaction {
   date: string;
-  place: string;
-  category: string;
+  name: string;
   owner: string;
   amount: number;
   installments: InstallmentDetails | null;
