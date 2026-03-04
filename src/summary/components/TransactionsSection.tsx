@@ -539,7 +539,7 @@ export default function TransactionsSection({
     setCategoryActionMessage('');
 
     try {
-      const response = await fetch('/api/places/categories/single', {
+      const response = await fetch('/api/transactions/categories/single', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

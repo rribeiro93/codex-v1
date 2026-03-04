@@ -6,7 +6,7 @@ import { renderDocument } from './htmlTemplate';
 import { paths, MONGODB_URI, MONGODB_DB_NAME } from './config';
 import { connectToDatabase, getDatabase } from './database';
 import statementsRouter from './routes/statements';
-import placesRouter from './routes/places';
+import transactionsRouter from './routes/transactions';
 import categoriesRouter from './routes/categories';
 
 function renderReactApp(url: string) {
@@ -24,7 +24,7 @@ export async function createServerApp() {
   app.use('/assets', express.static(paths.assetsDir));
 
   app.use('/api/statements', statementsRouter);
-  app.use('/api/places', placesRouter);
+  app.use('/api/transactions', transactionsRouter);
   app.use('/api/categories', categoriesRouter);
 
   app.get('*', (req, res) => {

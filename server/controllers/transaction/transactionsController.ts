@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { Db, ObjectId } from 'mongodb';
-import { PlaceDocument } from './placeDocument';
-import { PlaceResponse } from './placeResponse';
+import { TransactionDocument } from './transactionDocument';
+import { TransactionResponse } from './transactionResponse';
 
-function formatPlaceDocument(doc?: PlaceDocument | null): PlaceResponse | null {
+function formatPlaceDocument(doc?: TransactionDocument | null): TransactionResponse | null {
   if (!doc || typeof doc !== 'object') {
     return null;
   }
@@ -27,7 +27,6 @@ function formatPlaceDocument(doc?: PlaceDocument | null): PlaceResponse | null {
     cleanName: cleanNameSource,
     transaction: transactionSource,
     category: typeof doc.category === 'string' ? doc.category : '',
-    status: typeof doc.status === 'string' ? doc.status.trim() : '',
     updatedAt: updatedAtValue ? updatedAtValue.toISOString() : ''
   };
 }
@@ -40,7 +39,7 @@ function resolveDb(req: Request): Db {
   return db;
 }
 
-export async function handleUpdateSinglePlaceCategory(req: Request, res: Response) {
+export async function handleUpdateSingleTransactionCategory(req: Request, res: Response) {
   const db = resolveDb(req);
   const idValue = typeof req.body?.id === 'string' ? req.body.id.trim() : '';
   const transactionValue =
@@ -115,7 +114,7 @@ export async function handleUpdateSinglePlaceCategory(req: Request, res: Respons
   }
 
   try {
-    const result = await db.collection<PlaceDocument>('transaction_mappings').findOneAndUpdate(
+    const result = await db.collection<TransactionDocument>('transaction_mappings').findOneAndUpdate(
       filter,
       updatePayload,
       {

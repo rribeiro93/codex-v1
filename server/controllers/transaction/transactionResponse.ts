@@ -1,8 +1,7 @@
-export interface PlaceResponse {
+export interface TransactionResponse {
   id: string;
   cleanName: string;
   transaction: string;
   category: string;
-  status: string;
   updatedAt: string;
 }
