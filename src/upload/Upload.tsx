@@ -67,10 +67,12 @@ export default function Upload() {
         body && Number.isFinite(body.totalTransactions)
           ? body.totalTransactions
           : payload.totalTransactions;
+      const replacedExisting = body?.replacedExisting === true;
 
+      const action = replacedExisting ? 'Substitui' : 'Salvei';
       const message = identifier
-        ? `Salvei ${persistedTransactions} transações no banco de dados (id ${identifier}).`
-        : `Salvei ${persistedTransactions} transações no banco de dados.`;
+        ? `${action} ${persistedTransactions} transações no banco de dados (id ${identifier}).`
+        : `${action} ${persistedTransactions} transações no banco de dados.`;
 
       setSuccessMessage(message);
     } catch (err) {

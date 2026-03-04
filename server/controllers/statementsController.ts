@@ -118,15 +118,26 @@ export async function handleCreateStatement(req: Request, res: Response) {
 
   try {
     const now = new Date();
+    const normalizedMonth = typeof month === 'string' ? month : '';
+    const normalizedFileName = typeof fileName === 'string' ? fileName.trim() : '';
     const monthName = resolveStatementMonthName(
-      month,
-      fileName,
+      normalizedMonth,
+      normalizedFileName,
       sanitizedTransactions,
       providedMonthName
     );
+
+    let replacedExisting = false;
+    if (normalizedFileName) {
+      const deleteResult = await db
+        .collection<StatementDocument>('statements')
+        .deleteMany({ fileName: normalizedFileName });
+      replacedExisting = deleteResult.deletedCount > 0;
+    }
+
     const result = await db.collection<StatementDocument>('statements').insertOne({
-      month: typeof month === 'string' ? month : '',
-      fileName: typeof fileName === 'string' ? fileName : '',
+      month: normalizedMonth,
+      fileName: normalizedFileName,
       monthName,
       totalAmount,
       totalTransactions,
@@ -137,7 +148,8 @@ export async function handleCreateStatement(req: Request, res: Response) {
 
     return res.status(201).json({
       statementId: result.insertedId.toHexString(),
-      totalTransactions: sanitizedTransactions.length
+      totalTransactions: sanitizedTransactions.length,
+      replacedExisting
     });
   } catch (error) {
     console.error('Failed to persist statement', error);
