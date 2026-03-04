@@ -1,0 +1,6 @@
+[ ] Remodelar banco de dados de acordo com excalidraw
+[ ] Refactor aplicação com base na nova estrutura de dados
+[ ] Criar painel para gerenciar contas recorrentes (incluir investimentos)
+[ ] Adicionar um link dentro de cada mês para abrir contas pendentes
+    [ ] Ao clicar, abrir um slider com as contas ordenadas por data de vencimento
+    [ ] Cada conta deverá ter a opção de inserir o valor pago e um botão de "Pago"

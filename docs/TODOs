@@ -1,9 +1,0 @@
-[x] Create a docker compose with mongodb
-[x] Store all updload data to database
-[x] Generate views
-[x] Summarize amount by categories
-[x] Generate views
-
-
-Improvements
-    [X] When importing a cc bills, check if already exists by MM-YYYY and replace
