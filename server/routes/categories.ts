@@ -4,7 +4,7 @@ import {
   handleCreateCategory,
   handleUpdateCategory,
   handleDeleteCategory
-} from '../controllers/categoriesController';
+} from '../controllers/category/categoriesController';
 
 const router = Router();
 

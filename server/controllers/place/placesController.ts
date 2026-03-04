@@ -1,27 +1,9 @@
 import { Request, Response } from 'express';
 import { Db, ObjectId } from 'mongodb';
+import { PlaceDocument } from './placeDocument';
+import { PlaceResponse } from './placeResponse';
 
-interface PlaceDocument {
-  _id?: ObjectId | string;
-  cleanName?: string;
-  text?: string;
-  transaction?: string;
-  sourcePlace?: string;
-  category?: string;
-  status?: string;
-  updatedAt?: Date | string;
-}
-
-interface PlaceResponse {
-  id: string;
-  cleanName: string;
-  transaction: string;
-  category: string;
-  status: string;
-  updatedAt: string;
-}
-
-function formatPlaceDocument(doc: PlaceDocument | null | undefined): PlaceResponse | null {
+function formatPlaceDocument(doc?: PlaceDocument | null): PlaceResponse | null {
   if (!doc || typeof doc !== 'object') {
     return null;
   }

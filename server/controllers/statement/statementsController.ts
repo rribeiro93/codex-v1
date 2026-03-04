@@ -1,44 +1,16 @@
 import { Request, Response } from 'express';
 import { Db, ObjectId } from 'mongodb';
-import type { CsvTransaction } from '../../src/models/csv-transaction';
+import type { CsvTransaction } from '../../../src/models/csv-transaction';
 import {
   resolveStatementMonthName,
   sanitizeTransaction,
   getMonthNameFromIsoMonth
-} from '../utils/statements';
+} from '../../utils/statements';
+import { StatementDocument } from './statementDocument';
+import { CategoryDocument } from '../category/categoryDocument';
+import { CategorySummaryAggregateEntry } from './categorySummaryAggregateEntry';
+import { TransactionMappingDocument } from './transactionMappingDocument';
 
-interface StatementDocument {
-  _id?: ObjectId;
-  month?: string;
-  fileName?: string;
-  monthName?: string;
-  totalAmount?: number;
-  totalTransactions?: number;
-  transactions?: CsvTransaction[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-interface TransactionMappingDocument {
-  _id?: ObjectId;
-  transaction?: string;
-  cleanName?: string;
-  category?: string;
-}
-
-interface CategoryDocument {
-  _id?: ObjectId;
-  name?: string;
-  category?: string;
-}
-
-interface CategorySummaryAggregateEntry {
-  _id?: {
-    month?: unknown;
-    category?: unknown;
-  };
-  totalAmount?: unknown;
-}
 
 async function loadAvailableYears(db: Db): Promise<string[]> {
   const availableYearsDocs = await db

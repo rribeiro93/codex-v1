@@ -4,7 +4,7 @@ import {
   handleGetCategorySummary,
   handleGetSummary,
   handleGetTransactions
-} from '../controllers/statementsController';
+} from '../controllers/statement/statementsController';
 
 const router = Router();
 

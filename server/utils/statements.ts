@@ -1,6 +1,36 @@
 import type { CsvTransaction } from '../../src/models/csv-transaction';
 import { MONTH_NAMES } from '../../src/models/month-names';
 
+
+function extractIsoMonthFromFileName(fileName: unknown): string {
+  if (typeof fileName !== 'string') {
+    return '';
+  }
+
+  const formatted = fileName.trim();
+  if (!formatted) {
+    return '';
+  }
+
+  const match = formatted.match(/Fatura(\d{4}-\d{2})-\d{2}\.csv$/i);
+  return match ? match[1] : '';
+}
+
+function extractIsoMonthFromTransactions(transactions: CsvTransaction[] = []): string {
+  for (const transaction of transactions) {
+    if (!transaction || typeof transaction.date !== 'string') {
+      continue;
+    }
+
+    const match = transaction.date.match(/^(\d{4})-(\d{2})/);
+    if (match) {
+      return `${match[1]}-${match[2]}`;
+    }
+  }
+
+  return '';
+}
+
 export function getMonthNameFromIsoMonth(value: string): string {
   if (typeof value !== 'string') {
     return '';
@@ -17,35 +47,6 @@ export function getMonthNameFromIsoMonth(value: string): string {
   }
 
   return MONTH_NAMES[monthIndex] ?? '';
-}
-
-export function extractIsoMonthFromFileName(fileName: unknown): string {
-  if (typeof fileName !== 'string') {
-    return '';
-  }
-
-  const formatted = fileName.trim();
-  if (!formatted) {
-    return '';
-  }
-
-  const match = formatted.match(/Fatura(\d{4}-\d{2})-\d{2}\.csv$/i);
-  return match ? match[1] : '';
-}
-
-export function extractIsoMonthFromTransactions(transactions: CsvTransaction[] = []): string {
-  for (const transaction of transactions) {
-    if (!transaction || typeof transaction.date !== 'string') {
-      continue;
-    }
-
-    const match = transaction.date.match(/^(\d{4})-(\d{2})/);
-    if (match) {
-      return `${match[1]}-${match[2]}`;
-    }
-  }
-
-  return '';
 }
 
 export function resolveStatementMonthName(

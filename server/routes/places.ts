@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { handleUpdateSinglePlaceCategory } from '../controllers/placesController';
+import { handleUpdateSinglePlaceCategory } from '../controllers/place/placesController';
 
 const router = Router();
 

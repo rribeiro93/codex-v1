@@ -1,21 +1,7 @@
 import { Request, Response } from 'express';
 import { Db, ObjectId } from 'mongodb';
-
-interface CategoryDocument {
-  _id?: ObjectId | string;
-  name?: string;
-  category?: string;
-  createdAt?: Date | string | number;
-  updatedAt?: Date | string | number;
-}
-
-interface CategoryResponse {
-  id: string;
-  name: string;
-  category: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { CategoryDocument } from './categoryDocument';
+import { CategoryResponse } from './categoryResponse';
 
 function sanitizeName(value: unknown): string {
   if (typeof value !== 'string') {
@@ -35,7 +21,7 @@ function deriveCategoryEnum(name: string): string {
   return withoutDiacritics.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
-function formatCategoryDocument(doc: CategoryDocument | null | undefined): CategoryResponse | null {
+function formatCategoryDocument(doc?: CategoryDocument | null): CategoryResponse | null {
   if (!doc || typeof doc !== 'object') {
     return null;
   }
