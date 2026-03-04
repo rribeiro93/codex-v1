@@ -161,11 +161,12 @@ export async function handleGetSummary(req: Request, res: Response) {
   const db = resolveDb(req);
   try {
     const years = await loadAvailableYears(db);
+    const currentYear = String(new Date().getFullYear());
 
     const requestedYear = typeof req.query.year === 'string' ? req.query.year.trim() : '';
     let targetYear = requestedYear;
     if (!targetYear || !years.includes(targetYear)) {
-      targetYear = years[0] ?? '';
+      targetYear = years.includes(currentYear) ? currentYear : (years[0] ?? '');
     }
 
     const rawSummary = targetYear
