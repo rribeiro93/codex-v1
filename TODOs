@@ -1,3 +1,5 @@
+[ ] Organizar melhor o código, segregar mais responsabilidades para não virar megazord
+
 [ ] Remodelar banco de dados de acordo com excalidraw
 [ ] Refactor aplicação com base na nova estrutura de dados
 [ ] Criar painel para gerenciar contas recorrentes (incluir investimentos)
