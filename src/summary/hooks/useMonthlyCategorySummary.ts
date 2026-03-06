@@ -84,7 +84,7 @@ export function useMonthlyCategorySummary(
 
     try {
       const query = typeof year === 'string' && year ? `?year=${encodeURIComponent(year)}` : '';
-      const response = await fetch(`/api/statements/category-summary${query}`);
+      const response = await fetch(`/api/transactions/category-summary${query}`);
       if (!response.ok) {
         throw new Error(`Failed with status ${response.status}`);
       }

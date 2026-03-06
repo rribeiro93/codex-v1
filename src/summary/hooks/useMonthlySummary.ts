@@ -194,7 +194,7 @@ export function useMonthlySummary(): UseMonthlySummaryResult {
 
       try {
         const query = typeof year === 'string' && year ? `?year=${encodeURIComponent(year)}` : '';
-        const response = await fetch(`/api/statements/summary${query}`);
+        const response = await fetch(`/api/transactions/summary${query}`);
         if (!response.ok) {
           throw new Error(`Failed with status ${response.status}`);
         }
@@ -321,7 +321,7 @@ export function useMonthlySummary(): UseMonthlySummaryResult {
 
       try {
         const response = await fetch(
-          `/api/statements/transactions?month=${encodeURIComponent(targetMonth)}`
+          `/api/transactions?month=${encodeURIComponent(targetMonth)}`
         );
         if (!response.ok) {
           throw new Error(`Failed with status ${response.status}`);

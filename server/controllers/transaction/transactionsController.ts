@@ -1,35 +1,26 @@
 import { Request, Response } from 'express';
-import { Db, ObjectId } from 'mongodb';
-import { TransactionDocument } from './transactionDocument';
-import { TransactionResponse } from './transactionResponse';
-
-function formatPlaceDocument(doc?: TransactionDocument | null): TransactionResponse | null {
-  if (!doc || typeof doc !== 'object') {
-    return null;
-  }
-
-  const id = doc._id ? String(doc._id) : '';
-  if (!id) {
-    return null;
-  }
-
-  const cleanNameValue = typeof doc.cleanName === 'string' ? doc.cleanName.trim() : '';
-  const textValue = typeof doc.text === 'string' ? doc.text.trim() : '';
-  const transactionValue = typeof doc.transaction === 'string' ? doc.transaction.trim() : '';
-  const sourcePlaceValue = typeof doc.sourcePlace === 'string' ? doc.sourcePlace.trim() : '';
-  const cleanNameSource = cleanNameValue || textValue;
-  const transactionSource = transactionValue || sourcePlaceValue;
-
-  const updatedAtValue = doc.updatedAt ? new Date(doc.updatedAt) : null;
-
-  return {
-    id,
-    cleanName: cleanNameSource,
-    transaction: transactionSource,
-    category: typeof doc.category === 'string' ? doc.category : '',
-    updatedAt: updatedAtValue ? updatedAtValue.toISOString() : ''
-  };
-}
+import { Db } from 'mongodb';
+import { getTransactionsSummary } from '../../services/transactionsSummaryService';
+import { getTransactionsCategorySummary } from '../../services/transactionsCategorySummaryService';
+import { getTransactionsListByMonth } from '../../services/transactionsListService';
+import {
+  importTransactionsFromStatementPayload,
+  TransactionImportValidationError
+} from '../../services/transactionImportService';
+import {
+  createTransactionMapping,
+  MappingConflictError,
+  MappingNotFoundError,
+  MappingValidationError,
+  upsertTransactionMappingByTransaction,
+  updateTransactionMapping
+} from '../../services/transactionMappingService';
+import {
+  normalizeMonthQuery,
+  normalizeYearQuery,
+  validateMonthQuery,
+  validateYearQuery
+} from '../../utils/validation';
 
 function resolveDb(req: Request): Db {
   const db = req.app.locals.db as Db | undefined;
@@ -42,116 +33,144 @@ function resolveDb(req: Request): Db {
 export async function handleUpdateSingleTransactionCategory(req: Request, res: Response) {
   const db = resolveDb(req);
   const idValue = typeof req.body?.id === 'string' ? req.body.id.trim() : '';
-  const transactionValue =
-    typeof req.body?.transaction === 'string' ? req.body.transaction.trim() : '';
-  const rawCategoryValue = typeof req.body?.category === 'string' ? req.body.category : undefined;
-  const rawCleanNameValue = typeof req.body?.cleanName === 'string' ? req.body.cleanName : undefined;
-  const categoryValue =
-    typeof rawCategoryValue === 'string' ? rawCategoryValue.trim() : undefined;
-  const cleanNameValue =
-    typeof rawCleanNameValue === 'string' ? rawCleanNameValue.trim() : undefined;
-  const updateCategory = categoryValue;
+  const transactionValue = req.body?.transaction;
+  const categoryValue = req.body?.category;
+  const cleanNameValue = req.body?.cleanName;
 
-  if (!idValue && !transactionValue) {
-    return res
-      .status(400)
-      .json({ error: 'Either a place identifier or transaction text must be provided.' });
-  }
+  try {
+    const mapping = idValue
+      ? await updateTransactionMapping(db, idValue, {
+          category: categoryValue,
+          cleanName: cleanNameValue
+        })
+      : await upsertTransactionMappingByTransaction(db, {
+          transaction: transactionValue,
+          category: categoryValue,
+          cleanName: cleanNameValue
+        });
 
-  if (typeof rawCategoryValue === 'undefined' && typeof rawCleanNameValue === 'undefined') {
-    return res
-      .status(400)
-      .json({ error: 'At least one of cleanName or category must be provided.' });
-  }
-
-  let filter: Record<string, unknown>;
-  let upsert = false;
-  if (idValue) {
-    try {
-      filter = { _id: new ObjectId(idValue) };
-    } catch (error) {
-      return res.status(400).json({ error: 'Invalid place identifier provided.' });
+    return res.status(200).json({ mapping, place: mapping, name: mapping });
+  } catch (error) {
+    if (error instanceof MappingValidationError) {
+      return res.status(400).json({ error: error.message });
     }
-  } else {
-    if (!transactionValue) {
-      return res.status(400).json({ error: 'Transaction text is required to create a mapping.' });
+    if (error instanceof MappingNotFoundError) {
+      return res.status(404).json({ error: error.message });
     }
-    filter = { transaction: transactionValue };
-    upsert = true;
+    console.error('Failed to update single place category', error);
+    return res.status(500).json({ error: 'Failed to update place category.' });
   }
+}
 
-  const now = new Date();
-  const updatePayload: {
-    $set: Record<string, unknown>;
-    $setOnInsert?: Record<string, unknown>;
-  } = {
-    $set: {
-      updatedAt: now
+export async function handleCreateTransactionMapping(req: Request, res: Response) {
+  const db = resolveDb(req);
+
+  try {
+    const mapping = await createTransactionMapping(db, {
+      transaction: req.body?.transaction,
+      category: req.body?.category,
+      cleanName: req.body?.cleanName
+    });
+    return res.status(201).json({ mapping });
+  } catch (error) {
+    if (error instanceof MappingValidationError) {
+      return res.status(400).json({ error: error.message });
     }
-  };
-
-  if (typeof rawCategoryValue !== 'undefined') {
-    updatePayload.$set.category = updateCategory || '';
-  }
-
-  if (typeof rawCleanNameValue !== 'undefined') {
-    updatePayload.$set.cleanName = cleanNameValue || '';
-  }
-
-  if (upsert) {
-    const setOnInsertPayload: Record<string, unknown> = {
-      transaction: transactionValue,
-      text: '',
-      sourcePlace: transactionValue,
-      createdAt: now
-    };
-
-    if (typeof rawCleanNameValue === 'undefined') {
-      setOnInsertPayload.cleanName = '';
+    if (error instanceof MappingConflictError) {
+      return res.status(409).json({ error: error.message });
     }
+    console.error('Failed to create transaction mapping', error);
+    return res.status(500).json({ error: 'Failed to create transaction mapping.' });
+  }
+}
 
-    updatePayload.$setOnInsert = setOnInsertPayload;
+export async function handleUpdateTransactionMapping(req: Request, res: Response) {
+  const db = resolveDb(req);
+  const mappingId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  try {
+    const mapping = await updateTransactionMapping(db, mappingId, {
+      category: req.body?.category,
+      cleanName: req.body?.cleanName
+    });
+    return res.status(200).json({ mapping });
+  } catch (error) {
+    if (error instanceof MappingValidationError) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error instanceof MappingNotFoundError) {
+      return res.status(404).json({ error: error.message });
+    }
+    console.error('Failed to update transaction mapping', error);
+    return res.status(500).json({ error: 'Failed to update transaction mapping.' });
+  }
+}
+
+export async function handleGetTransactionsSummary(req: Request, res: Response) {
+  const db = resolveDb(req);
+  const requestedYear = normalizeYearQuery(req.query.year);
+  const yearValidationError = validateYearQuery(requestedYear);
+  if (yearValidationError) {
+    return res.status(400).json({ error: yearValidationError });
   }
 
   try {
-    const result = await db.collection<TransactionDocument>('transaction_mappings').findOneAndUpdate(
-      filter,
-      updatePayload,
-      {
-        returnDocument: 'after',
-        upsert
-      }
-    );
-
-    let resolvedDocument = result.value;
-    if (!resolvedDocument) {
-      const lookupQuery = idValue ? { _id: (filter as { _id: ObjectId })._id } : { transaction: transactionValue };
-      const upsertedId =
-        result?.lastErrorObject?.upserted ?? result?.lastErrorObject?.upsertedId ?? null;
-
-      if (upsertedId) {
-        const resolvedId =
-          typeof upsertedId === 'object' && upsertedId !== null ? upsertedId : new ObjectId(upsertedId);
-        resolvedDocument = await db.collection('transaction_mappings').findOne({ _id: resolvedId });
-      }
-
-      if (!resolvedDocument) {
-        resolvedDocument = await db.collection('transaction_mappings').findOne(lookupQuery);
-      }
-    }
-
-    if (!resolvedDocument) {
-      return res.status(404).json({ error: 'Place not found.' });
-    }
-
-    const formatted = formatPlaceDocument(resolvedDocument);
-    if (!formatted) {
-      return res.status(200).json({ place: null });
-    }
-
-    return res.status(200).json({ place: formatted });
+    const payload = await getTransactionsSummary(db, requestedYear);
+    return res.status(200).json(payload);
   } catch (error) {
-    console.error('Failed to update single place category', error);
-    return res.status(500).json({ error: 'Failed to update place category.' });
+    console.error('Failed to load transactions summary', error);
+    return res.status(500).json({ error: 'Failed to load transactions summary.' });
+  }
+}
+
+export async function handleGetTransactionsCategorySummary(req: Request, res: Response) {
+  const db = resolveDb(req);
+  const requestedYear = normalizeYearQuery(req.query.year);
+  const yearValidationError = validateYearQuery(requestedYear);
+  if (yearValidationError) {
+    return res.status(400).json({ error: yearValidationError });
+  }
+
+  try {
+    const payload = await getTransactionsCategorySummary(db, requestedYear);
+    return res.status(200).json(payload);
+  } catch (error) {
+    console.error('Failed to load transactions category summary', error);
+    return res.status(500).json({ error: 'Failed to load transactions category summary.' });
+  }
+}
+
+export async function handleGetTransactionsByMonth(req: Request, res: Response) {
+  const db = resolveDb(req);
+  const month = normalizeMonthQuery(req.query.month);
+  const monthValidationError = validateMonthQuery(month);
+  if (monthValidationError) {
+    return res.status(400).json({ error: monthValidationError });
+  }
+
+  try {
+    const payload = await getTransactionsListByMonth(db, month);
+    return res.status(200).json(payload);
+  } catch (error) {
+    console.error('Failed to load transactions list', error);
+    return res.status(500).json({ error: 'Failed to load transactions list.' });
+  }
+}
+
+export async function handleImportTransactions(req: Request, res: Response) {
+  const db = resolveDb(req);
+  try {
+    const imported = await importTransactionsFromStatementPayload(db, {
+      month: req.body?.month,
+      fileName: req.body?.fileName,
+      transactions: req.body?.transactions
+    });
+    return res.status(201).json(imported);
+  } catch (error) {
+    if (error instanceof TransactionImportValidationError) {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error('Failed to import transactions', error);
+    return res.status(500).json({ error: 'Failed to import transactions.' });
   }
 }

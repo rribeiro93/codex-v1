@@ -45,7 +45,7 @@ export default function Upload() {
     setSuccessMessage('');
 
     try {
-      const response = await fetch('/api/statements', {
+      const response = await fetch('/api/transactions/import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

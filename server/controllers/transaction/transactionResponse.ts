@@ -1,7 +1,1 @@
-export interface TransactionResponse {
-  id: string;
-  cleanName: string;
-  transaction: string;
-  category: string;
-  updatedAt: string;
-}
+export type { TransactionMappingDto as TransactionResponse } from '../../domain/transactions/transactionDto';

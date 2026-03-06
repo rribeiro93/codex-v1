@@ -5,7 +5,6 @@ import App from '../src/App';
 import { renderDocument } from './htmlTemplate';
 import { paths, MONGODB_URI, MONGODB_DB_NAME } from './config';
 import { connectToDatabase, getDatabase } from './database';
-import statementsRouter from './routes/statements';
 import transactionsRouter from './routes/transactions';
 import categoriesRouter from './routes/categories';
 
@@ -23,7 +22,6 @@ export async function createServerApp() {
   app.use(express.json({ limit: '2mb' }));
   app.use('/assets', express.static(paths.assetsDir));
 
-  app.use('/api/statements', statementsRouter);
   app.use('/api/transactions', transactionsRouter);
   app.use('/api/categories', categoriesRouter);
 
